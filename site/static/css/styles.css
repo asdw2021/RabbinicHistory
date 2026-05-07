@@ -1,0 +1,292 @@
+html,
+body,
+#map {
+  height: 100%;
+  margin: 0;
+}
+
+#year {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 8px 20px;
+  border-radius: 8px;
+  font: 700 22px/1.2 "Segoe UI", sans-serif;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+#yearNav {
+  position: absolute;
+  top: 12px;
+  left: 10px;
+  z-index: 1003;
+  display: flex;
+  gap: 6px;
+}
+
+#yearNav button,
+#applyRange,
+#eventToggle {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #888;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#yearNav button:hover,
+#applyRange:hover,
+#eventToggle:hover {
+  background: #eee;
+}
+
+#slider {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  width: 60%;
+  z-index: 1001;
+}
+
+#rangeBox {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 6px 10px;
+  border-radius: 6px;
+  z-index: 1002;
+  font: 600 12px/1 sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+#rangeBox input {
+  width: 70px;
+  margin: 0 4px;
+}
+
+#filters {
+  position: absolute;
+  top: 60px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font: 13px/1.4 "Segoe UI", sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  z-index: 1004;
+}
+
+#filters label {
+  display: block;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+
+#eventPanel {
+  position: absolute;
+  top: 120px;
+  left: 10px;
+  z-index: 1005;
+  font: 14px/1.4 "Segoe UI", sans-serif;
+}
+
+#eventToggle {
+  display: none;
+  margin-bottom: 6px;
+}
+
+#eventBox {
+  background: #fdf6e3;
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+  max-width: 310px;
+  max-height: 38vh;
+  overflow: auto;
+  display: none;
+}
+
+#eventBox ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.city {
+  pointer-events: none;
+  user-select: none;
+  color: #000;
+  font-weight: 600;
+  font-style: italic;
+  font-size: 10px !important;
+}
+
+.label-text {
+  font-weight: 700;
+  text-shadow: 0 0 2px #fff;
+  color: #000;
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.rabbi-label {
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: bold;
+  color: white;
+  white-space: nowrap;
+  text-align: center;
+  margin-top: 4px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
+  font-size: inherit;
+  line-height: 1.15;
+}
+
+.rabbi-single-name:hover,
+.rabbi-name:hover,
+.rabbi-label:hover,
+.label-text:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.leaflet-marker-icon,
+.leaflet-interactive {
+  transition: opacity 0.22s ease;
+}
+
+.leaflet-tooltip.country-tooltip {
+  background: rgba(255, 255, 255, 0.95);
+  color: #111;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  font: 700 13px/1.2 "Segoe UI", sans-serif;
+  padding: 4px 7px;
+}
+
+.leaflet-popup.compact-popup .leaflet-popup-content-wrapper {
+  background: white;
+  border: none;
+  box-shadow: none;
+  padding: 2px 4px;
+}
+
+.leaflet-popup.compact-popup .leaflet-popup-content {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.leaflet-popup.compact-popup .leaflet-popup-tip-container {
+  display: none;
+}
+
+.leaflet-popup.auto-event-popup .leaflet-popup-content-wrapper {
+  background: rgba(255, 248, 220, 0.85);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(200, 180, 120, 0.6);
+  padding: 6px 10px;
+}
+
+.auto-event-content {
+  font-size: 13px;
+  font-style: italic;
+  color: #333;
+}
+
+@media (max-width: 700px) {
+  #slider {
+    width: 86%;
+  }
+
+  #filters {
+    top: auto;
+    right: 8px;
+    bottom: 95px;
+    max-height: 35vh;
+    overflow: auto;
+  }
+
+  #rangeBox {
+    bottom: 52px;
+    width: max-content;
+    max-width: 92vw;
+  }
+
+  #yearNav button {
+    font-size: 12px;
+    padding: 4px 6px;
+  }
+
+  #year {
+    font-size: 18px;
+    padding: 6px 14px;
+  }
+
+  #eventPanel {
+    top: auto;
+    bottom: 145px;
+    left: 8px;
+  }
+
+  #eventBox {
+    max-width: 88vw;
+    max-height: 28vh;
+  }
+}
+
+#sizeControl {
+  position: absolute;
+  right: 10px;
+  top: 250px;
+  z-index: 1006;
+
+  background: rgba(255,255,255,0.92);
+  padding: 8px 10px;
+  border-radius: 8px;
+
+  font: 13px "Segoe UI", sans-serif;
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+#sizeControl input {
+  width: 120px;
+}
+
+#rabbiSearchBox {
+  position: absolute;
+
+  top: 220px;
+  right: 10px;
+
+  z-index: 2000;
+
+  background: rgba(255,255,255,0.95);
+
+  padding: 8px 10px;
+  border-radius: 8px;
+
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+#rabbiSearchInput {
+  width: 170px;
+  font-size: 14px;
+}
