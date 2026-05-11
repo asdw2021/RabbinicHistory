@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="static/css/styles.css" />
+<link rel="stylesheet" href="static/css/styles.css?v=story4" />
 </head>
 
 <body>
@@ -35,44 +35,82 @@
     <label><input type="checkbox" id="toggleRabbiEvents" checked /> Rabbi Events</label>
   </div>
 
-<div id="rabbiSearchBox">
-  <input
-    id="rabbiSearchInput"
-    list="rabbiSearchList"
-    placeholder="Search rabbi..."
-  />
-
-  <datalist id="rabbiSearchList"></datalist>
-
-  <button id="rabbiSearchButton">Go</button>
-</div>
-
-
-<div id="sizeControl">
-  <label>
-    Rabbi Size
+  <div id="rabbiSearchBox">
     <input
-      type="range"
-      id="rabbiSizeSlider"
-      min="0.25"
-      max="1.5"
-      step="0.05"
-      value="0.65"
+      id="rabbiSearchInput"
+      list="rabbiSearchList"
+      placeholder="Search rabbi..."
     />
-  </label>
 
-  <label style="display:block;margin-top:6px;">
-    <input type="checkbox" id="toggleRabbiNames" checked />
-    Show Rabbi Names
-  </label>
+    <datalist id="rabbiSearchList"></datalist>
+
+    <button id="rabbiSearchButton">Go</button>
+  </div>
+
+  <div id="sizeControl">
+    <label>
+      Rabbi Size
+      <input
+        type="range"
+        id="rabbiSizeSlider"
+        min="0.25"
+        max="1.5"
+        step="0.05"
+        value="0.65"
+      />
+    </label>
+
+    <label style="display:block;margin-top:6px;">
+      <input type="checkbox" id="toggleRabbiNames" checked />
+      Show Rabbi Names
+    </label>
+  </div>
+
+  <!-- Rabbi Video / Story Mode -->
+  <div id="storyControl">
+    <div id="storyHeader">
+      <span>Rabbi Story Mode</span>
+      <span id="storyDropdownArrow">▾</span>
+    </div>
+
+    <div id="storyBody">
+      <select id="storyRabbiSelect">
+        <option value="">Select rabbi...</option>
+      </select>
+
+      <select id="storySpeed">
+        <option value="6000">Slow</option>
+        <option value="3500" selected>Normal</option>
+        <option value="1800">Fast</option>
+      </select>
+
+      <div id="storyButtons">
+        <button id="playStory">▶ Play</button>
+        <button id="pauseStory">⏸ Pause</button>
+        <button id="stopStory">⏹ Stop</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="storyPanel">
+    <button id="storyPanelClose">×</button>
+    <h2 id="storyTitle">Rabbi Story</h2>
+    <h3 id="storyYear"></h3>
+    <div id="storyText"></div>
+  </div>
+<div id="storyDetailBox">
+  <button id="storyDetailClose">×</button>
+  <img id="storyDetailImage" />
+  <div id="storyDetailExtract"></div>
+  <button id="storyReadMore">Read more</button>
+  <div id="storyMoreText"></div>
 </div>
-
   <div id="eventPanel">
     <button id="eventToggle">Events ▾</button>
     <div id="eventBox"></div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="static/js/app.js"></script>
+<script src="static/js/app.js?v=story4"></script>
 </body>
 </html>

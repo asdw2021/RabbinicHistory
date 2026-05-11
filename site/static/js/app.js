@@ -33,7 +33,12 @@ let showToken = 0;
 let sliderTimer = null;
 let eventPanelOpen = false;
 let lastEventsList = [];
-
+let storyTimer = null;
+let currentStoryIndex = 0;
+let currentStoryEvents = [];
+let storyMarker = null;
+let storyLine = null;
+let storyPaused = false;
 const entityColors = {};
 
 const yearBox = document.getElementById("year");
@@ -65,7 +70,34 @@ async function loadJSON(path) {
   if (!response.ok) throw new Error(`Failed to load ${path}: ${response.status}`);
   return await response.json();
 }
+const EVENT_FILES = [
+  "data/events.json",
 
+  "eventsgrouped/sefarim.json",
+  "eventsgrouped/Pogroms.json",
+  "eventsgrouped/JewishTowns.json",
+  "eventsgrouped/Regions.json",
+  "eventsgrouped/Concentration.json",
+  "eventsgrouped/HolocaustAnimate.json",
+  "eventsgrouped/HolocaustStatic.json",
+  "eventsgrouped/Statistics.json",
+  "eventsgrouped/Zionist.json"
+];
+
+async function loadAllEvents() {
+  const results = await Promise.all(
+    EVENT_FILES.map(async path => {
+      try {
+        return await loadJSON(path);
+      } catch (err) {
+        console.warn("Could not load:", path, err);
+        return [];
+      }
+    })
+  );
+
+  return results.flat();
+}
 async function loadInitialData() {
   [
     colors,
@@ -85,7 +117,9 @@ async function loadInitialData() {
     loadJSON("data/years.json"),
     loadJSON("data/cities.json"),
     loadJSON("data/battles.json"),
-    loadJSON("data/events.json"),
+
+    loadAllEvents(),
+
     loadJSON("data/rabbis.json"),
     loadJSON("data/rabbis_movement.json"),
     loadJSON("data/personalities.json"),
@@ -94,6 +128,8 @@ async function loadInitialData() {
     loadJSON("data/shuls_movement.json"),
     loadJSON("data/bible_places.json")
   ]);
+
+  console.log("Loaded events:", EVENTS.length);
 }
 
 async function tryLoadBordersForYear(year) {
@@ -835,7 +871,13 @@ r._marker.setIcon(L.divIcon({
 
 function updateEventBox(events) {
   lastEventsList = events;
+  if (document.body.classList.contains("story-active")) {
+    eventToggle.style.display = "none";
+    eventBox.style.display = "none";
+    return;
+  }
 
+  lastEventsList = events;
   if (!events.length) {
     eventToggle.style.display = "none";
     eventBox.style.display = "none";
@@ -878,6 +920,13 @@ async function show(y, animate = false) {
 
   updateEventBox(eventsList);
   preloadNearbyBorders(currentIndex);
+  if (document.body.classList.contains("story-active")) {
+  ["yearNav", "rangeBox", "filters", "rabbiSearchBox", "sizeControl", "eventPanel", "slider", "year"]
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+}
 }
 
 function refreshRabbiMarkerSizes() {
@@ -927,15 +976,17 @@ if (toggleRabbiNames) {
     refreshRabbiMarkerSizes();
   });
 }
-  if (rabbiSearchButton && rabbiSearchInput) {
-    populateRabbiSearch();
+populateRabbiSearch();
+populateStoryDropdown();
+setupStoryControls();
 
-    rabbiSearchButton.addEventListener("click", jumpToRabbi);
+if (rabbiSearchButton && rabbiSearchInput) {
+  rabbiSearchButton.addEventListener("click", jumpToRabbi);
 
-    rabbiSearchInput.addEventListener("keydown", e => {
-      if (e.key === "Enter") jumpToRabbi();
-    });
-  }
+  rabbiSearchInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") jumpToRabbi();
+  });
+}
 
   slider.oninput = function() {
     map._isDraggingSlider = true;
@@ -1088,4 +1139,243 @@ async function jumpToRabbi() {
     map.setView(pos, Math.max(map.getZoom(), 8));
   }
 }
+// ==========================
+// RABBI STORY / VIDEO MODE
+// ==========================
+
+function populateStoryDropdown() {
+  const storySelect = document.getElementById("storyRabbiSelect");
+  if (!storySelect) return;
+
+  storySelect.innerHTML = `<option value="">Select rabbi...</option>`;
+
+  RABBIS.concat(PERSONALITIES)
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+    .forEach(r => {
+      const opt = document.createElement("option");
+      opt.value = r.name;
+      opt.textContent = r.name;
+      storySelect.appendChild(opt);
+    });
+}
+
+function setupStoryControls() {
+  const storyControl = document.getElementById("storyControl");
+  const storyHeader = document.getElementById("storyHeader");
+  const storyArrow = document.getElementById("storyDropdownArrow");
+
+  if (storyHeader && storyControl) {
+    storyHeader.onclick = () => {
+      storyControl.classList.toggle("open");
+
+      if (storyArrow) {
+        storyArrow.textContent = storyControl.classList.contains("open") ? "▴" : "▾";
+      }
+    };
+  }
+
+  const playBtn = document.getElementById("playStory");
+  const pauseBtn = document.getElementById("pauseStory");
+  const stopBtn = document.getElementById("stopStory");
+  const closeBtn = document.getElementById("storyPanelClose");
+
+  if (playBtn) playBtn.onclick = playRabbiStory;
+  if (pauseBtn) pauseBtn.onclick = pauseRabbiStory;
+  if (stopBtn) stopBtn.onclick = stopRabbiStory;
+
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      const panel = document.getElementById("storyPanel");
+      if (panel) panel.style.display = "none";
+    };
+  }
+}
+
+async function playRabbiStory() {
+  const storySelect = document.getElementById("storyRabbiSelect");
+  const storySpeed = document.getElementById("storySpeed");
+
+  if (!storySelect || !storySelect.value) return;
+
+  const rabbiName = storySelect.value;
+
+  if (storyPaused && currentStoryEvents.length) {
+    document.body.classList.add("story-active");
+    storyPaused = false;
+    storyTimer = setInterval(showNextStoryEvent, Number(storySpeed.value));
+    return;
+  }
+
+clearStoryMapObjects();
+document.body.classList.add("story-active");
+
+  currentStoryEvents =
+    RABBIS_MOV[rabbiName] ||
+    PERSONALITIES_MOV[rabbiName] ||
+    [];
+
+  currentStoryEvents = currentStoryEvents
+    .filter(ev => ev.lat && ev.lng)
+    .sort((a, b) => Number(a.year) - Number(b.year));
+
+  if (!currentStoryEvents.length) {
+    document.body.classList.remove("story-active");
+    alert("No movement data found for this rabbi.");
+    return;
+  }
+
+  currentStoryIndex = 0;
+
+  storyLine = L.polyline([], {
+    color: "red",
+    weight: 4
+  }).addTo(map);
+
+  const panel = document.getElementById("storyPanel");
+  if (panel) panel.style.display = "block";
+
+  showNextStoryEvent();
+
+  storyTimer = setInterval(
+    showNextStoryEvent,
+    Number(storySpeed.value)
+  );
+}
+
+async function showNextStoryEvent() {
+  if (currentStoryIndex >= currentStoryEvents.length) {
+    clearInterval(storyTimer);
+    storyTimer = null;
+    return;
+  }
+
+  const storySelect = document.getElementById("storyRabbiSelect");
+  const ev = currentStoryEvents[currentStoryIndex];
+  const latlng = [ev.lat, ev.lng];
+
+  map.flyTo(latlng, 7, {
+    duration: 2
+  });
+
+  if (!storyMarker) {
+    storyMarker = L.marker(latlng, {
+      zIndexOffset: 20000
+    }).addTo(map);
+  } else {
+    storyMarker.setLatLng(latlng);
+  }
+
+  if (storyLine) {
+    storyLine.addLatLng(latlng);
+  }
+
+  document.getElementById("storyTitle").innerHTML = storySelect.value;
+  document.getElementById("storyYear").innerHTML = ev.year || "";
+  document.getElementById("storyText").innerHTML = ev.event || "";
+showStoryDetails(ev);
+  const eventYear = Number(ev.year);
+
+  if (Number.isFinite(eventYear)) {
+    let nearestIndex = 0;
+    let smallestDiff = Infinity;
+
+    ACTIVE_YEARS.forEach((year, index) => {
+      const diff = Math.abs(Number(year) - eventYear);
+      if (diff < smallestDiff) {
+        smallestDiff = diff;
+        nearestIndex = index;
+      }
+    });
+
+    currentIndex = nearestIndex;
+    slider.value = currentIndex;
+    await show(ACTIVE_YEARS[currentIndex], false);
+  }
+
+  currentStoryIndex++;
+}
+
+function pauseRabbiStory() {
+  if (storyTimer) {
+    clearInterval(storyTimer);
+    storyTimer = null;
+    storyPaused = true;
+  }
+}
+
+function stopRabbiStory() {
+  document.body.classList.remove("story-active");
+
+  restoreUIAfterStory();
+
+  clearStoryMapObjects();
+
+  const panel = document.getElementById("storyPanel");
+  if (panel) panel.style.display = "none";
+
+  const detailBox = document.getElementById("storyDetailBox");
+  if (detailBox) detailBox.style.display = "none";
+}
+function clearStoryMapObjects() {
+  if (storyTimer) {
+    clearInterval(storyTimer);
+    storyTimer = null;
+  }
+
+  storyPaused = false;
+  currentStoryIndex = 0;
+  currentStoryEvents = [];
+
+  if (storyMarker) {
+    map.removeLayer(storyMarker);
+    storyMarker = null;
+  }
+
+  if (storyLine) {
+    map.removeLayer(storyLine);
+    storyLine = null;
+  }
+}
+
+function showStoryDetails(point) {
+  const box = document.getElementById("storyDetailBox");
+  const img = document.getElementById("storyDetailImage");
+  const extract = document.getElementById("storyDetailExtract");
+  const more = document.getElementById("storyMoreText");
+  const readMore = document.getElementById("storyReadMore");
+
+const imgSrc = point.image || point.img || point.photo || "";
+img.src = imgSrc;
+img.style.display = imgSrc ? "block" : "none";
+
+  extract.innerHTML = point.extract || point.event || "";
+  more.innerHTML = point.read_more || "";
+  more.style.display = "none";
+
+  readMore.style.display = point.read_more ? "inline-block" : "none";
+  readMore.onclick = () => {
+    more.style.display = more.style.display === "none" ? "block" : "none";
+    readMore.textContent = more.style.display === "none" ? "Read more" : "Show less";
+  };
+
+  box.style.display = "block";
+}
+function restoreUIAfterStory() {
+  [
+    "yearNav",
+    "rangeBox",
+    "filters",
+    "rabbiSearchBox",
+    "sizeControl",
+    "eventPanel",
+    "slider",
+    "year"
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "";
+  });
+}
+document.getElementById("storyDetailClose").onclick = () => {
+  document.getElementById("storyDetailBox").style.display = "none";
+};
 main();
