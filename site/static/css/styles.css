@@ -1035,3 +1035,341 @@ body.story-active #year {
     max-height: calc(100vh - 24px);
   }
 }
+
+/* Android and narrow-screen layout. Desktop rules above remain unchanged. */
+#mobileControlsToggle {
+  display: none;
+}
+
+@media (max-width: 700px), (pointer: coarse) and (max-width: 900px) {
+  :root {
+    --mobile-safe-top: env(safe-area-inset-top, 0px);
+    --mobile-safe-right: env(safe-area-inset-right, 0px);
+    --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --mobile-safe-left: env(safe-area-inset-left, 0px);
+  }
+
+  html,
+  body,
+  #map {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  button,
+  input,
+  select,
+  label {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  input[type="number"],
+  input[type="text"],
+  input:not([type]),
+  select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  #year {
+    top: calc(8px + var(--mobile-safe-top));
+    max-width: 32vw;
+    padding: 7px 12px;
+    overflow: hidden;
+    font-size: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #mobileControlsToggle {
+    position: fixed;
+    top: calc(8px + var(--mobile-safe-top));
+    right: calc(8px + var(--mobile-safe-right));
+    z-index: 1000001;
+    display: block;
+    min-height: 44px;
+    padding: 8px 11px;
+    border: 1px solid rgba(60, 55, 45, 0.45);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 2px 9px rgba(0, 0, 0, 0.24);
+    color: #27231d;
+    font: 700 14px/1.1 "Segoe UI", sans-serif;
+  }
+
+  #rightControls {
+    position: fixed;
+    top: calc(60px + var(--mobile-safe-top));
+    right: calc(8px + var(--mobile-safe-right));
+    z-index: 1000000;
+    display: flex;
+    width: min(290px, calc(100vw - 16px - var(--mobile-safe-left) - var(--mobile-safe-right)));
+    max-height: calc(100dvh - 190px - var(--mobile-safe-top) - var(--mobile-safe-bottom));
+    padding: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-radius: 11px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.32);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(calc(100% + 20px));
+    transition: transform 180ms ease, opacity 150ms linear;
+  }
+
+  body.mobile-controls-open #rightControls {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+
+  body.story-active #mobileControlsToggle,
+  body.story-active #rightControls {
+    display: none !important;
+  }
+
+  #rightControls > #filters,
+  #rightControls > #rabbiSearchBox,
+  #rightControls > #seferSearchBox,
+  #rightControls > #sizeControl {
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  #filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px 8px;
+    padding: 10px 12px;
+  }
+
+  #filters label {
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+  }
+
+  #filters input[type="checkbox"],
+  #sizeControl input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+
+  #rabbiSearchBox,
+  #seferSearchBox {
+    padding: 8px 10px;
+  }
+
+  #rightControls #rabbiSearchInput,
+  #rightControls #seferSearchInput {
+    width: calc(100% - 54px);
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  #sizeControl {
+    padding: 10px 12px;
+  }
+
+  #sizeControl input[type="range"] {
+    width: min(170px, 62vw);
+    height: 36px;
+  }
+
+  #yearNav {
+    position: fixed;
+    top: auto;
+    right: calc(8px + var(--mobile-safe-right));
+    bottom: calc(82px + var(--mobile-safe-bottom));
+    left: calc(8px + var(--mobile-safe-left));
+    z-index: 1004;
+    display: grid;
+    grid-template-columns: minmax(76px, 1fr) 70px 58px minmax(76px, 1fr);
+    gap: 5px;
+    max-width: none;
+    padding: 5px;
+    overflow: visible;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  }
+
+  #yearNav button,
+  #jumpYearInput {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 6px 4px;
+    font-size: 13px;
+  }
+
+  #slider {
+    position: fixed;
+    bottom: calc(58px + var(--mobile-safe-bottom));
+    width: calc(100vw - 28px - var(--mobile-safe-left) - var(--mobile-safe-right));
+    height: 28px;
+    margin: 0;
+  }
+
+  #rangeBox {
+    position: fixed;
+    right: calc(8px + var(--mobile-safe-right));
+    bottom: calc(8px + var(--mobile-safe-bottom));
+    left: calc(8px + var(--mobile-safe-left));
+    width: auto;
+    max-width: none;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: auto minmax(58px, 1fr) auto minmax(58px, 1fr) 52px;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 6px;
+  }
+
+  #rangeBox input {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    box-sizing: border-box;
+    margin: 0;
+    font-size: 16px;
+  }
+
+  #applyRange {
+    min-height: 40px;
+  }
+
+  #storyControl {
+    top: calc(60px + var(--mobile-safe-top));
+    left: calc(8px + var(--mobile-safe-left));
+    width: min(210px, calc(100vw - 90px));
+    z-index: 1005;
+  }
+
+  #storyHeader {
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 9px 12px;
+  }
+
+  #storyControl.open {
+    width: min(290px, calc(100vw - 16px));
+  }
+
+  #storyButtons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
+  #storyControl button {
+    min-height: 44px;
+    margin: 0;
+    padding: 6px 3px;
+  }
+
+  #storyPanel,
+  #storyDetailBox,
+  #seferDetailPanel {
+    top: calc(8px + var(--mobile-safe-top));
+    right: calc(8px + var(--mobile-safe-right));
+    bottom: calc(8px + var(--mobile-safe-bottom));
+    left: calc(8px + var(--mobile-safe-left));
+    width: auto;
+    max-width: none;
+    max-height: none;
+    box-sizing: border-box;
+    overflow: auto;
+  }
+
+  #storyPanelClose,
+  #storyDetailClose,
+  #seferDetailClose {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 26px;
+  }
+
+  #eventPanel {
+    position: fixed;
+    top: calc(114px + var(--mobile-safe-top));
+    bottom: auto;
+    left: calc(8px + var(--mobile-safe-left));
+    z-index: 1004;
+  }
+
+  #eventToggle {
+    display: block;
+    min-height: 44px;
+  }
+
+  #eventBox {
+    width: min(310px, calc(100vw - 16px));
+    max-width: none;
+    max-height: min(42dvh, 360px);
+    box-sizing: border-box;
+  }
+
+  #demographicEditor {
+    bottom: calc(142px + var(--mobile-safe-bottom));
+    left: calc(8px + var(--mobile-safe-left));
+  }
+
+  #demographicEditorBody {
+    width: min(340px, calc(100vw - 16px));
+    max-height: 55dvh;
+  }
+
+  .demographic-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .leaflet-control-zoom a {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 24px !important;
+    line-height: 42px !important;
+  }
+
+  .leaflet-popup-content-wrapper {
+    max-width: calc(100vw - 42px);
+  }
+
+  .leaflet-popup-content {
+    max-width: calc(100vw - 78px);
+    max-height: 55dvh;
+    overflow: auto;
+  }
+
+  .leaflet-control-attribution {
+    max-width: 62vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 390px) {
+  #yearNav {
+    grid-template-columns: 68px 62px 50px 68px;
+  }
+
+  #yearNav button,
+  #jumpYearInput {
+    font-size: 12px;
+  }
+
+  #year {
+    left: 46%;
+    max-width: 25vw;
+  }
+}

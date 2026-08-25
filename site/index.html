@@ -3,13 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <title>Rabbinic History Map</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#252f2b" />
+  <meta name="mobile-web-app-capable" content="yes" />
 
   <link rel="preconnect" href="https://unpkg.com" />
   <link rel="preconnect" href="https://server.arcgisonline.com" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="static/css/styles.css?v=controls6" />
+<link rel="stylesheet" href="static/css/styles.css?v=android1" />
 </head>
 
 <body>
@@ -31,7 +33,11 @@
     <button id="applyRange">Set</button>
   </div>
 
-  <div id="rightControls">
+  <button id="mobileControlsToggle" type="button" aria-expanded="false" aria-controls="rightControls">
+    ☰ Map options
+  </button>
+
+  <div id="rightControls" aria-label="Map options">
   <div id="filters">
     <label><input type="checkbox" id="toggleRabbis" checked /> Rabbis</label>
     <label><input type="checkbox" id="toggleShuls" checked /> Shuls</label>
@@ -161,6 +167,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="static/js/app.js?v=controls6"></script>
+<script src="static/js/app.js?v=android1"></script>
 </body>
 </html>

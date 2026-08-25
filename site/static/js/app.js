@@ -3204,6 +3204,7 @@ async function setupControlsAndDraw() {
   populateFollowDropdown();
   setupFollowControls();
   setupSeferDetails();
+  setupMobileControls();
 
   if (
     rabbiSearchButton &&
@@ -4197,6 +4198,40 @@ function findFollowStartIndex(entity) {
   const candidateYear = Number(ACTIVE_YEARS[low]);
   if (candidateYear > getEntityMapEndYear(entity)) return -1;
   return getFollowPosition(entity, candidateYear) ? low : -1;
+}
+
+function setupMobileControls() {
+  const toggle = document.getElementById("mobileControlsToggle");
+  const controls = document.getElementById("rightControls");
+  if (!toggle || !controls) return;
+
+  const mobileQuery = window.matchMedia("(max-width: 700px)");
+  const setOpen = open => {
+    const mobileOpen = mobileQuery.matches && open;
+    document.body.classList.toggle("mobile-controls-open", mobileOpen);
+    toggle.setAttribute("aria-expanded", String(mobileOpen));
+    toggle.textContent = mobileOpen ? "× Close options" : "☰ Map options";
+  };
+
+  toggle.addEventListener("click", event => {
+    event.stopPropagation();
+    setOpen(!document.body.classList.contains("mobile-controls-open"));
+  });
+
+  controls.addEventListener("click", event => event.stopPropagation());
+  document.addEventListener("click", () => setOpen(false));
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") setOpen(false);
+  });
+
+  const closeAfterAction = event => {
+    if (!mobileQuery.matches) return;
+    if (event.target.closest("#rabbiSearchButton, #seferSearchButton")) {
+      requestAnimationFrame(() => setOpen(false));
+    }
+  };
+  controls.addEventListener("click", closeAfterAction);
+  mobileQuery.addEventListener?.("change", () => setOpen(false));
 }
 
 function latLngToTile(
