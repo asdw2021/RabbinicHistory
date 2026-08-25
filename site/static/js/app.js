@@ -321,7 +321,7 @@ function buildPeopleIndexes() {
 function cleanRecordName(value) {
   const element = document.createElement("div");
   element.innerHTML = String(value || "");
-  return element.textContent.replace(/^\s*📖\s*/, "").trim();
+  return element.textContent.replace(/^\s*ðŸ“–\s*/, "").trim();
 }
 
 function searchValues(record) {
@@ -342,7 +342,7 @@ function normalizeSearchText(value) {
     .replace(/[\u0300-\u036f\u0591-\u05c7]/g, "")
     .toLowerCase()
     .replace(/\b(?:rabbi|rabbenu|rabbeinu|rav|rebbe|reb|gaon|hakohen)\b/g, " ")
-    .replace(/(?:^|\s)r[’'`.]?\s*/g, " ")
+    .replace(/(?:^|\s)r[â€™'`.]?\s*/g, " ")
     .replace(/ph/g, "f").replace(/ck/g, "k").replace(/kh|ch/g, "h")
     .replace(/tz|ts/g, "z").replace(/w/g, "v")
     .replace(/[^\p{L}\p{N}]+/gu, " ")
@@ -402,13 +402,13 @@ function isSeferEvent(event) {
     tags.includes("sefer") ||
     tags.includes("sefarim") ||
     String(event.id || "").toLowerCase().startsWith("sefarim_") ||
-    event.emoji === "📖";
+    event.emoji === "ðŸ“–";
 }
 
 function openSeferDetails(sefer) {
   if (!seferDetailPanel || !seferDetailSections) return;
   const sections = Array.isArray(sefer.book_sections) ? sefer.book_sections : [];
-  seferDetailTitle.textContent = `📖 ${cleanRecordName(sefer.name)}`;
+  seferDetailTitle.textContent = `ðŸ“– ${cleanRecordName(sefer.name)}`;
 
   if (!sections.length) {
     seferDetailSections.innerHTML =
@@ -427,7 +427,7 @@ function openSeferDetails(sefer) {
   if (sefer.source_url && /^https?:\/\//i.test(sefer.source_url)) {
     seferDetailSections.insertAdjacentHTML(
       "beforeend",
-      `<a class="sefer-source-link" href="${escapeHTML(sefer.source_url)}" target="_blank" rel="noopener noreferrer">Open source text ↗</a>`
+      `<a class="sefer-source-link" href="${escapeHTML(sefer.source_url)}" target="_blank" rel="noopener noreferrer">Open source text â†—</a>`
     );
   }
   seferDetailPanel.classList.add("open");
@@ -458,7 +458,7 @@ function buildEventIndex() {
     event._position = getRecordLatLng(event);
     event._isSefer = isSeferEvent(event);
     event._symbol = event._isSefer
-      ? { text: "📖", className: "default-event-symbol sefer-symbol" }
+      ? { text: "ðŸ“–", className: "default-event-symbol sefer-symbol" }
       : getEventSymbol(event);
     if (event._isSefer) SEFARIM.push(event);
 
@@ -576,7 +576,7 @@ function drawDemographics(year) {
       const low = record.low === undefined ? NaN : Number(record.low);
       const high = record.high === undefined ? NaN : Number(record.high);
       const range = Number.isFinite(low) || Number.isFinite(high)
-        ? ` <small>(${Number.isFinite(low) ? formatDemographicValue(low) : "?"}–${Number.isFinite(high) ? formatDemographicValue(high) : "?"})</small>`
+        ? ` <small>(${Number.isFinite(low) ? formatDemographicValue(low) : "?"}â€“${Number.isFinite(high) ? formatDemographicValue(high) : "?"})</small>`
         : "";
       return `<div class="demographic-stat">
         <div class="demographic-stat-line">
@@ -584,7 +584,7 @@ function drawDemographics(year) {
           <strong>${formatDemographicValue(record.value)}${range}${percent === null ? "" : ` (${percent.toFixed(1)}%)`}</strong>
         </div>
         ${percent === null ? "" : `<div class="demographic-bar"><span style="width:${percent}%;background:${colour}"></span></div>`}
-        <div class="demographic-meta">${escapeHTML(record.date_label || record.start_year)}${record.confidence ? ` · ${escapeHTML(record.confidence)} confidence` : ""}</div>
+        <div class="demographic-meta">${escapeHTML(record.date_label || record.start_year)}${record.confidence ? ` Â· ${escapeHTML(record.confidence)} confidence` : ""}</div>
       </div>`;
     }).join("");
 
@@ -618,7 +618,7 @@ function renderDemographicEntries() {
   if (!demographicEntries) return;
   demographicEntries.innerHTML = DEMOGRAPHICS.length
     ? DEMOGRAPHICS.map(record => `<div class="demographic-entry">
-        <span>${escapeHTML(record.place)}: ${escapeHTML(record.label)} (${escapeHTML(record.start_year)}${record.end_year && record.end_year !== record.start_year ? `–${escapeHTML(record.end_year)}` : ""})</span>
+        <span>${escapeHTML(record.place)}: ${escapeHTML(record.label)} (${escapeHTML(record.start_year)}${record.end_year && record.end_year !== record.start_year ? `â€“${escapeHTML(record.end_year)}` : ""})</span>
         <button data-demographic-delete="${escapeHTML(record.id)}" title="Delete">Delete</button>
       </div>`).join("")
     : "<small>No demographic records yet.</small>";
@@ -1167,7 +1167,7 @@ function getYearsText(entity) {
 
   return `${entity.birth_year}${
     entity.death_year
-      ? "–" + entity.death_year
+      ? "â€“" + entity.death_year
       : ""
   }`;
 }
@@ -1200,6 +1200,17 @@ function getDisplayName(
   r,
   y
 ) {
+  return String(
+    r.base_name ||
+    r.name ||
+    "Unknown person"
+  ).trim();
+}
+
+function getEntityTitle(
+  r,
+  y
+) {
   const parts = [];
 
   if (
@@ -1224,12 +1235,10 @@ function getDisplayName(
     parts.push(r.title);
   }
 
-  parts.push(
-    r.base_name ||
-    r.name
-  );
-
-  return parts.join(" ");
+  const displayName = normalizeSearchText(getDisplayName(r, y));
+  return [...new Set(parts.map(value => String(value || "").trim()))]
+    .filter(value => value && normalizeSearchText(value) !== displayName)
+    .join(" Â· ");
 }
 
 function getEntityMapEndYear(entity) {
@@ -1248,17 +1257,17 @@ function getEntityMapEndYear(entity) {
 }
 
 const HEBREW_NAME_WORDS = {
-  aaron: "אהרן", aharon: "אהרן", abraham: "אברהם", avraham: "אברהם",
-  akiva: "עקיבא", aryeh: "אריה", baruch: "ברוך", ben: "בן", chaim: "חיים",
-  dov: "דב", elazar: "אלעזר", eliezer: "אליעזר", eliyahu: "אליהו",
-  ephraim: "אפרים", ezra: "עזרא", gershon: "גרשון", hillel: "הלל",
-  isaac: "יצחק", yitzchak: "יצחק", israel: "ישראל", yisrael: "ישראל",
-  jacob: "יעקב", yaakov: "יעקב", joseph: "יוסף", yosef: "יוסף",
-  judah: "יהודה", yehuda: "יהודה", levi: "לוי", meir: "מאיר",
-  menachem: "מנחם", moses: "משה", moshe: "משה", mordechai: "מרדכי",
-  nachman: "נחמן", naftali: "נפתלי", ovadia: "עובדיה", pinchas: "פנחס",
-  samuel: "שמואל", shmuel: "שמואל", shimon: "שמעון", shlomo: "שלמה",
-  solomon: "שלמה", tzvi: "צבי", zevi: "צבי", zalman: "זלמן"
+  aaron: "××”×¨×Ÿ", aharon: "××”×¨×Ÿ", abraham: "××‘×¨×”×", avraham: "××‘×¨×”×",
+  akiva: "×¢×§×™×‘×", aryeh: "××¨×™×”", baruch: "×‘×¨×•×š", ben: "×‘×Ÿ", chaim: "×—×™×™×",
+  dov: "×“×‘", elazar: "××œ×¢×–×¨", eliezer: "××œ×™×¢×–×¨", eliyahu: "××œ×™×”×•",
+  ephraim: "××¤×¨×™×", ezra: "×¢×–×¨×", gershon: "×’×¨×©×•×Ÿ", hillel: "×”×œ×œ",
+  isaac: "×™×¦×—×§", yitzchak: "×™×¦×—×§", israel: "×™×©×¨××œ", yisrael: "×™×©×¨××œ",
+  jacob: "×™×¢×§×‘", yaakov: "×™×¢×§×‘", joseph: "×™×•×¡×£", yosef: "×™×•×¡×£",
+  judah: "×™×”×•×“×”", yehuda: "×™×”×•×“×”", levi: "×œ×•×™", meir: "×ž××™×¨",
+  menachem: "×ž× ×—×", moses: "×ž×©×”", moshe: "×ž×©×”", mordechai: "×ž×¨×“×›×™",
+  nachman: "× ×—×ž×Ÿ", naftali: "× ×¤×ª×œ×™", ovadia: "×¢×•×‘×“×™×”", pinchas: "×¤× ×—×¡",
+  samuel: "×©×ž×•××œ", shmuel: "×©×ž×•××œ", shimon: "×©×ž×¢×•×Ÿ", shlomo: "×©×œ×ž×”",
+  solomon: "×©×œ×ž×”", tzvi: "×¦×‘×™", zevi: "×¦×‘×™", zalman: "×–×œ×ž×Ÿ"
 };
 
 function transliterateNameWord(word) {
@@ -1267,17 +1276,17 @@ function transliterateNameWord(word) {
   if (HEBREW_NAME_WORDS[clean]) return HEBREW_NAME_WORDS[clean];
 
   const clusters = [
-    ["sch", "ש"], ["tch", "טש"], ["sh", "ש"], ["ch", "ח"],
-    ["tz", "צ"], ["ts", "צ"], ["ph", "פ"], ["th", "ת"],
-    ["ck", "ק"], ["oo", "ו"], ["ee", "י"]
+    ["sch", "×©"], ["tch", "×˜×©"], ["sh", "×©"], ["ch", "×—"],
+    ["tz", "×¦"], ["ts", "×¦"], ["ph", "×¤"], ["th", "×ª"],
+    ["ck", "×§"], ["oo", "×•"], ["ee", "×™"]
   ];
   let source = clean;
   let result = "";
   const letters = {
-    a: "א", b: "ב", c: "ק", d: "ד", e: "ע", f: "פ", g: "ג",
-    h: "ה", i: "י", j: "י", k: "ק", l: "ל", m: "מ", n: "נ",
-    o: "ו", p: "פ", q: "ק", r: "ר", s: "ס", t: "ט", u: "ו",
-    v: "ו", w: "ו", x: "קס", y: "י", z: "ז"
+    a: "×", b: "×‘", c: "×§", d: "×“", e: "×¢", f: "×¤", g: "×’",
+    h: "×”", i: "×™", j: "×™", k: "×§", l: "×œ", m: "×ž", n: "× ",
+    o: "×•", p: "×¤", q: "×§", r: "×¨", s: "×¡", t: "×˜", u: "×•",
+    v: "×•", w: "×•", x: "×§×¡", y: "×™", z: "×–"
   };
 
   while (source) {
@@ -1301,17 +1310,17 @@ function getHebrewRabbiLabel(r) {
   if (hebrew) {
     hebrew = String(hebrew)
       .replace(/\([^)]*[A-Za-z][^)]*\)/g, " ")
-      .replace(/[A-Za-z][A-Za-z .'’-]*/g, " ")
-      .replace(/^\s*(?:רבי|הרב|ר[׳']?)\s+/u, "")
+      .replace(/[A-Za-z][A-Za-z .'â€™-]*/g, " ")
+      .replace(/^\s*(?:×¨×‘×™|×”×¨×‘|×¨[×³']?)\s+/u, "")
       .replace(/\s+/g, " ").trim();
   } else {
     const english = String(r.base_name || r.name || "")
       .replace(/\([^)]*\)/g, " ")
-      .replace(/^\s*(?:rabbi|rav|r['’]?)\s+/i, "").trim();
+      .replace(/^\s*(?:rabbi|rav|r['â€™]?)\s+/i, "").trim();
     hebrew = english.split(/[\s-]+/).map(transliterateNameWord).filter(Boolean).join(" ");
   }
 
-  r._hebrewMapLabel = `ר׳ ${hebrew || "ללא שם"}`;
+  r._hebrewMapLabel = `×¨×³ ${hebrew || "×œ×œ× ×©×"}`;
   return r._hebrewMapLabel;
 }
 
@@ -1359,11 +1368,13 @@ function buildEntityPopup(
               r,
               y
             );
+          const titleText = getEntityTitle(r, y);
 
           return `
             <div style="margin-top:6px;">
-              <strong>${getDisplayName(r, y)}</strong><br>
-              ${yearsStr}${ageText ? " — " + ageText : ""}<br>
+              <strong>${escapeHTML(getDisplayName(r, y))}</strong>
+              ${titleText ? `<div class="entity-popup-title">${escapeHTML(titleText)}</div>` : ""}
+              ${yearsStr}${ageText ? " â€” " + ageText : ""}<br>
               ${r.bio || ""}
             </div>
           `;
@@ -1401,11 +1412,13 @@ function buildEntityPopup(
       r,
       y
     );
+  const titleText = getEntityTitle(r, y);
 
   return buildPopup(`
     ${imgHtml}
-    <strong>${getDisplayName(r, y)}</strong><br>
-    ${yearsStr}${ageText ? " — " + ageText : ""}<br>
+    <strong>${escapeHTML(getDisplayName(r, y))}</strong>
+    ${titleText ? `<div class="entity-popup-title">${escapeHTML(titleText)}</div>` : ""}
+    ${yearsStr}${ageText ? " â€” " + ageText : ""}<br>
     ${r.bio || ""}
   `);
 }
@@ -1805,7 +1818,7 @@ function drawBattles(
             position,
             {
               icon: L.divIcon({
-                html: "⚔️",
+                html: "âš”ï¸",
                 className: "",
                 iconSize: [24, 24]
               }),
@@ -1854,7 +1867,7 @@ function drawBattles(
 
       if (visible) {
         eventsList.push(
-          `⚔️ ${b.name} — ${b.note || b.event || ""}`
+          `âš”ï¸ ${b.name} â€” ${b.note || b.event || ""}`
         );
       }
     }
@@ -1886,7 +1899,7 @@ function buildRegionPopup(region) {
     + `<div class="region-description">${region.note || "No description has been added yet."}</div>`
     + `${region.certainty ? `<div class="region-confidence">Boundary confidence: ${escapeHTML(region.certainty)}</div>` : ""}`
     + buildRegionReferences(region)
-    + `<small>${region.start_year}–${region.end_year}</small></div>`
+    + `<small>${region.start_year}â€“${region.end_year}</small></div>`
   );
 }
 
@@ -1959,7 +1972,7 @@ function drawTemporaryRegions(y, eventsList) {
     region._label.setOpacity(visible ? 1 : 0);
 
     if (visible) {
-      eventsList.push(`${region.name} — ${region.note || ""}`);
+      eventsList.push(`${region.name} â€” ${region.note || ""}`);
     }
   });
 }
@@ -1973,12 +1986,12 @@ function getEventSymbol(ev) {
     ev.category === "expulsion_deportation" ||
     /\b(expulsion|expulsions|expelled|expels|deportation|deported)\b/.test(searchable) ||
     /\bexpulsion_layer\b/.test(searchable);
-  if (isExpulsion) return { text: "✕", className: "expulsion-symbol" };
+  if (isExpulsion) return { text: "âœ•", className: "expulsion-symbol" };
 
   const isPogromOrKilling =
     /\b(pogrom|pogroms|massacre|massacres|massacred|murder|murdered|killing|killings|killed|slaughter|slaughtered)\b/.test(searchable) ||
     /\bpersecution_pogrom_massacre\b/.test(searchable);
-  if (isPogromOrKilling) return { text: "🔥", className: "fire-symbol" };
+  if (isPogromOrKilling) return { text: "ðŸ”¥", className: "fire-symbol" };
 
   return ev.emoji
     ? { text: ev.emoji, className: "default-event-symbol" }
@@ -2032,7 +2045,7 @@ function drawEvents(
             ? `<div class="event-symbol ${eventSymbol.className}">${eventSymbol.text}</div>`
             : ev.img
               ? `<img src="${ev.img}" loading="lazy" decoding="async" style="width:30px;height:30px;object-fit:contain;">`
-              : `<div style="font-size:20px;">📍</div>`;
+              : `<div style="font-size:20px;">ðŸ“</div>`;
 
         ev._marker =
           L.marker(
@@ -2078,7 +2091,7 @@ function drawEvents(
 
               icon: L.divIcon({
                 className: "label-text event-label",
-                html: `<span class="event-label-drag-area" title="Drag to reposition this ${isSefarim ? "sefer" : "event"}"><span class="event-label-handle">●</span><span>${escapeHTML(cleanRecordName(ev.name))}</span></span>`,
+                html: `<span class="event-label-drag-area" title="Drag to reposition this ${isSefarim ? "sefer" : "event"}"><span class="event-label-handle">â—</span><span>${escapeHTML(cleanRecordName(ev.name))}</span></span>`,
                 iconSize: [160, 24],
                 iconAnchor: [0, 10]
               }),
@@ -2112,7 +2125,7 @@ function drawEvents(
         : filters.events.checked;
 
       const popupHTML = isSefarim
-        ? `<div class="sefer-popup"><strong>📖 ${escapeHTML(cleanRecordName(ev.name))}</strong>${Number.isFinite(Number(ev.year ?? ev.start_year)) ? `<br><small>${escapeHTML(ev.year ?? ev.start_year)}</small>` : ""}<div class="sefer-popup-description">${ev.note || ev.event || "No further information is available for this book yet."}</div>${ev.source ? `<small>Source: ${escapeHTML(ev.source)}</small>` : ""}<button class="sefer-sections-button" data-sefer-id="${escapeHTML(ev.id || "")}">Open book sections</button></div>`
+        ? `<div class="sefer-popup"><strong>ðŸ“– ${escapeHTML(cleanRecordName(ev.name))}</strong>${Number.isFinite(Number(ev.year ?? ev.start_year)) ? `<br><small>${escapeHTML(ev.year ?? ev.start_year)}</small>` : ""}<div class="sefer-popup-description">${ev.note || ev.event || "No further information is available for this book yet."}</div>${ev.source ? `<small>Source: ${escapeHTML(ev.source)}</small>` : ""}<button class="sefer-sections-button" data-sefer-id="${escapeHTML(ev.id || "")}">Open book sections</button></div>`
         : `<strong>${ev.name}</strong><br>${ev.note || ev.event || ""}${ev.source ? `<br><small>Source: ${ev.source}</small>` : ""}`;
 
       if (visible) {
@@ -2171,7 +2184,7 @@ function drawEvents(
         visibleEvents.push(ev);
         if (!isSefarim) {
           eventsList.push(
-            `${ev._symbol?.text || "📍"} ${ev.name} — ${ev.note || ev.event || ""}`
+            `${ev._symbol?.text || "ðŸ“"} ${ev.name} â€” ${ev.note || ev.event || ""}`
           );
         }
       }
@@ -2332,7 +2345,7 @@ function drawShuls(
 
         if (moveEvent) {
           eventsList.push(
-            `⛪ ${s.name} — ${moveEvent.event}`
+            `â›ª ${s.name} â€” ${moveEvent.event}`
           );
         }
 
@@ -2551,7 +2564,7 @@ function renderRabbis(
 
             if (followed) {
               eventsList.unshift(
-                `👤 ${getDisplayName(r, y)} — ${moveEvent.event}`
+                `ðŸ‘¤ ${getDisplayName(r, y)} â€” ${moveEvent.event}`
               );
             }
 
@@ -2919,8 +2932,8 @@ function updateEventBox(events) {
   eventToggle.textContent =
     `Events (${events.length}) ${
       eventPanelOpen
-        ? "▴"
-        : "▾"
+        ? "â–´"
+        : "â–¾"
     }`;
 
   if (eventPanelOpen) {
@@ -4033,7 +4046,7 @@ function setupFollowControls() {
     control
   ) {
     header.innerHTML =
-      `<span>Follow a Story</span><span id="storyDropdownArrow">▾</span>`;
+      `<span>Follow a Story</span><span id="storyDropdownArrow">â–¾</span>`;
 
     const newArrow =
       document.getElementById(
@@ -4051,8 +4064,8 @@ function setupFollowControls() {
             control.classList.contains(
               "open"
             )
-              ? "▴"
-              : "▾";
+              ? "â–´"
+              : "â–¾";
         }
       };
 
@@ -4060,7 +4073,7 @@ function setupFollowControls() {
     arrow
   ) {
     arrow.textContent =
-      "▾";
+      "â–¾";
   }
 
   configureFollowSpeedOptions();
@@ -4210,7 +4223,7 @@ function setupMobileControls() {
     const mobileOpen = mobileQuery.matches && open;
     document.body.classList.toggle("mobile-controls-open", mobileOpen);
     toggle.setAttribute("aria-expanded", String(mobileOpen));
-    toggle.textContent = mobileOpen ? "× Close options" : "☰ Map options";
+    toggle.textContent = mobileOpen ? "Ã— Close options" : "â˜° Map options";
   };
 
   toggle.addEventListener("click", event => {
@@ -4698,7 +4711,7 @@ async function startOrResumeFollow() {
       false;
 
     updateFollowStatus(
-      `Following ${followedRabbi.name} — ${currentYear}`
+      `Following ${followedRabbi.name} â€” ${currentYear}`
     );
 
     return;
@@ -4776,7 +4789,7 @@ async function startOrResumeFollow() {
     );
 
   updateFollowStatus(
-    `Loading ${entity.name} and the next map area…`
+    `Loading ${entity.name} and the next map areaâ€¦`
   );
 
   preloadFollowWindow(
@@ -4798,7 +4811,7 @@ async function startOrResumeFollow() {
   );
 
   updateFollowStatus(
-    `Following ${entity.name} — ${ACTIVE_YEARS[currentIndex]}`
+    `Following ${entity.name} â€” ${ACTIVE_YEARS[currentIndex]}`
   );
 
   runFollowTimeline(
@@ -5011,7 +5024,7 @@ async function animateFollowTravel(
 
   try {
     updateFollowStatus(
-      `Loading travel map — ${fromYear} → ${toYear}`
+      `Loading travel map â€” ${fromYear} â†’ ${toYear}`
     );
 
     await Promise.race([
@@ -5032,7 +5045,7 @@ async function animateFollowTravel(
     }
 
     updateFollowStatus(
-      `${entity.name} is moving — ${fromYear} → ${toYear}`
+      `${entity.name} is moving â€” ${fromYear} â†’ ${toYear}`
     );
 
     // STEP 1:
@@ -5269,7 +5282,7 @@ async function runFollowTimeline(token) {
       stepStart;
 
     updateFollowStatus(
-      `Preparing ${nextYear}…`
+      `Preparing ${nextYear}â€¦`
     );
 
     preloadFollowStep(
@@ -5397,12 +5410,12 @@ async function runFollowTimeline(token) {
       rabbiEvent
     ) {
       updateFollowStatus(
-        `${followedRabbi.name} — ${nextYear}: ${rabbiEvent.event}`
+        `${followedRabbi.name} â€” ${nextYear}: ${rabbiEvent.event}`
       );
 
     } else {
       updateFollowStatus(
-        `Following ${followedRabbi.name} — ${nextYear}`
+        `Following ${followedRabbi.name} â€” ${nextYear}`
       );
     }
 
@@ -5478,7 +5491,7 @@ function pauseFollowPlayback(
     true;
 
   updateFollowStatus(
-    `${message} — ${
+    `${message} â€” ${
       followedRabbi?.name ||
       ""
     } ${
@@ -5555,3 +5568,4 @@ function stopFollowPlayback({
 }
 
 main();
+
