@@ -21,7 +21,7 @@ body,
 #yearNav {
   position: absolute;
   top: 12px;
-  left: 10px;
+  left: 58px;
   z-index: 1003;
   display: flex;
   gap: 6px;
@@ -76,6 +76,8 @@ body,
   position: absolute;
   top: 60px;
   right: 10px;
+  width: 190px;
+  box-sizing: border-box;
   background: rgba(255, 255, 255, 0.92);
   padding: 8px 12px;
   border-radius: 8px;
@@ -126,6 +128,16 @@ body,
   font-weight: 600;
   font-style: italic;
   font-size: 10px !important;
+  text-shadow: 0 0 2px #fff, 0 0 4px #fff;
+}
+
+.city-zoom-4 {
+  font-size: 13px !important;
+  font-weight: 800;
+}
+
+.city-zoom-5 {
+  font-size: 11px !important;
 }
 
 .label-text {
@@ -136,6 +148,233 @@ body,
   pointer-events: none;
   user-select: none;
   white-space: nowrap;
+}
+
+#demographicEditor {
+  position: absolute;
+  left: 10px;
+  bottom: 96px;
+  z-index: 1007;
+  font: 12px/1.3 "Segoe UI", sans-serif;
+}
+
+#jumpYearInput {
+  width: 72px;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  border: 1px solid #888;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  font-size: 14px;
+}
+
+#yearNav button {
+  user-select: none;
+  touch-action: none;
+}
+
+@media (max-width: 900px) {
+  #year {
+    top: 55px;
+  }
+}
+
+#demographicEditorToggle,
+.demographic-actions button {
+  border: 1px solid #777;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 5px 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#demographicEditorBody {
+  display: none;
+  width: 320px;
+  max-height: 62vh;
+  margin-top: 5px;
+  padding: 10px;
+  overflow: auto;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.32);
+}
+
+#demographicEditor.open #demographicEditorBody {
+  display: block;
+}
+
+.demographic-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.demographic-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-weight: 600;
+}
+
+.demographic-grid input {
+  min-width: 0;
+  padding: 4px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+}
+
+.demographic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+#demographicMessage {
+  min-height: 16px;
+  margin-top: 5px;
+  color: #7a251d;
+  font-weight: 600;
+}
+
+.demographic-entry {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid #ddd;
+}
+
+.demographic-entry button {
+  border: 0;
+  background: transparent;
+  color: #a21d18;
+  cursor: pointer;
+}
+
+.demographic-card {
+  width: 190px;
+  padding: 7px 9px;
+  box-sizing: border-box;
+  border: 1px solid rgba(25, 35, 50, 0.55);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: #17202a;
+  font: 11px/1.25 "Segoe UI", sans-serif;
+}
+
+.demographic-card-title {
+  margin-bottom: 5px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.demographic-stat + .demographic-stat {
+  margin-top: 6px;
+}
+
+.demographic-stat-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.demographic-meta {
+  margin-top: 2px;
+  color: #5d6670;
+  font-size: 9px;
+}
+
+.demographic-bar {
+  height: 5px;
+  margin-top: 3px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #dfe4ea;
+}
+
+.demographic-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.leaflet-tooltip.demographic-tooltip {
+  padding: 4px 7px;
+  border-radius: 5px;
+  font: 11px/1.25 "Segoe UI", sans-serif;
+}
+
+.event-label {
+  width: 0 !important;
+  height: 20px !important;
+  padding: 0;
+  overflow: visible;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  box-shadow: none;
+  font-size: 11px;
+  line-height: 20px;
+  display: block !important;
+  cursor: default;
+  user-select: none;
+  touch-action: none;
+  pointer-events: none !important;
+}
+
+.label-text.event-label .event-label-drag-area {
+  pointer-events: auto !important;
+}
+
+.event-label.leaflet-drag-target,
+.event-label:active {
+  cursor: grabbing !important;
+}
+
+.event-label:hover {
+  text-decoration: none !important;
+}
+
+.event-label-drag-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  width: max-content;
+  transform: translateX(-50%);
+  padding: 1px 3px;
+  border-radius: 4px;
+  cursor: grab;
+  pointer-events: auto !important;
+  transition: background-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.event-label-drag-area:hover,
+.event-label.event-label-dragging .event-label-drag-area {
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 0 0 1px rgba(25, 25, 25, 0.38), 0 2px 5px rgba(0, 0, 0, 0.22);
+}
+
+.event-label.event-label-dragging .event-label-drag-area {
+  cursor: grabbing !important;
+}
+
+.event-label-handle {
+  display: inline-flex;
+  width: 8px;
+  height: 12px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 8px;
+  color: #202020;
+  font-size: 9px;
+  line-height: 1;
+  text-shadow: 0 0 2px #fff, 0 0 3px #fff;
 }
 
 .rabbi-label {
@@ -149,6 +388,24 @@ body,
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
   font-size: inherit;
   line-height: 1.15;
+  direction: rtl;
+  unicode-bidi: isolate;
+}
+
+.event-symbol {
+  font-size: 28px;
+  line-height: 32px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.expulsion-symbol {
+  color: #111;
+  direction: ltr;
+  font-family: Arial, sans-serif;
+  font-size: 27px;
+  font-weight: 900;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.85);
 }
 
 .rabbi-single-name:hover,
@@ -159,9 +416,10 @@ body,
   cursor: pointer;
 }
 
-.leaflet-marker-icon,
-.leaflet-interactive {
-  transition: opacity 0.22s ease;
+.rabbi-img-icon,
+.event-label {
+  transition: opacity 0.12s linear;
+  will-change: transform, opacity;
 }
 
 .leaflet-tooltip.country-tooltip {
@@ -214,9 +472,21 @@ body,
   #filters {
     top: auto;
     right: 8px;
-    bottom: 95px;
+    bottom: 180px;
     max-height: 35vh;
     overflow: auto;
+  }
+
+  #rabbiSearchBox {
+    top: auto;
+    right: 8px;
+    bottom: 120px;
+  }
+
+  #sizeControl {
+    top: auto;
+    right: 8px;
+    bottom: 8px;
   }
 
   #rangeBox {
@@ -250,7 +520,7 @@ body,
 #sizeControl {
   position: absolute;
   right: 10px;
-  top: 250px;
+  top: 365px;
   z-index: 1006;
 
   background: rgba(255,255,255,0.92);
@@ -266,10 +536,11 @@ body,
   width: 120px;
 }
 
-#rabbiSearchBox {
+#rabbiSearchBox,
+#seferSearchBox {
   position: absolute;
 
-  top: 220px;
+  top: 255px;
   right: 10px;
 
   z-index: 2000;
@@ -286,7 +557,8 @@ body,
   align-items: center;
 }
 
-#rabbiSearchInput {
+#rabbiSearchInput,
+#seferSearchInput {
   width: 170px;
   font-size: 14px;
 }
@@ -421,10 +693,12 @@ body,
   position: fixed;
   top: 315px;
   left: 10px;
+  right: auto;
+  bottom: auto;
   z-index: 999998;
 
-  width: 320px;
-  max-height: 260px;
+  width: min(320px, calc(100vw - 24px));
+  max-height: min(260px, calc(100vh - 120px));
   overflow: auto;
 
   background: rgba(250, 247, 241, 0.97);
@@ -456,6 +730,7 @@ body.story-active #yearNav,
 body.story-active #rangeBox,
 body.story-active #filters,
 body.story-active #rabbiSearchBox,
+body.story-active #seferSearchBox,
 body.story-active #sizeControl,
 body.story-active #eventPanel,
 body.story-active #slider,
@@ -468,10 +743,14 @@ body.story-active #year {
   position: fixed;
   top: 315px;
   right: 10px;
+  left: auto;
+  bottom: auto;
   z-index: 999998;
-  width: 340px;
-  max-height: 420px;
+
+  width: min(340px, calc(100vw - 24px));
+  max-height: min(420px, calc(100vh - 120px));
   overflow: auto;
+
   background: rgba(250, 247, 241, 0.97);
   color: #2f2a24;
   border: 1px solid rgba(120,105,85,0.22);
@@ -499,4 +778,260 @@ body.story-active #year {
   background: transparent;
   font-size: 18px;
   cursor: pointer;
+}
+
+.temporary-region-label {
+  background: rgba(255, 250, 240, 0.94);
+  border: 1px solid rgba(80, 30, 30, 0.75);
+  border-radius: 5px;
+  color: #321b1b;
+  font: 700 12px/1.2 "Segoe UI", sans-serif;
+  padding: 4px 7px;
+  white-space: nowrap;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.region-description {
+  margin: 7px 0;
+  line-height: 1.4;
+}
+
+.region-confidence {
+  margin: 6px 0;
+  color: #66553d;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.region-references {
+  margin: 8px 0;
+  padding-top: 6px;
+  border-top: 1px solid rgba(90, 68, 40, 0.2);
+  font-size: 11px;
+}
+
+.region-references ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.region-references a {
+  color: #624514;
+}
+
+.region-references-missing {
+  color: #7b6a54;
+  font-style: italic;
+}
+
+/* Keep the right-side controls in a predictable vertical stack. */
+#filters {
+  top: 60px;
+  right: 10px;
+}
+
+#rabbiSearchBox {
+  top: 275px;
+  right: 10px;
+}
+
+#seferSearchBox {
+  top: 320px;
+  right: 10px;
+}
+
+#sizeControl {
+  top: 375px;
+  right: 10px;
+}
+
+@media (max-width: 700px) {
+  #filters {
+    top: auto;
+    right: 8px;
+    bottom: 180px;
+  }
+
+  #rabbiSearchBox {
+    top: auto;
+    right: 8px;
+    bottom: 150px;
+  }
+
+  #seferSearchBox {
+    top: auto;
+    right: 8px;
+    bottom: 105px;
+  }
+
+  #sizeControl {
+    top: auto;
+    right: 8px;
+    bottom: 8px;
+  }
+}
+
+.sefer-popup-description {
+  margin: 7px 0 5px;
+  max-width: 280px;
+  line-height: 1.35;
+}
+
+.sefer-sections-button {
+  display: block;
+  margin-top: 9px;
+  padding: 6px 10px;
+  border: 1px solid #79613e;
+  border-radius: 6px;
+  background: #f3e7cb;
+  color: #352a1b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sefer-sections-button:hover {
+  background: #e9d6ad;
+}
+
+/* A single scrolling stack prevents the filters and search controls from
+   covering one another at any viewport height. */
+#rightControls {
+  position: absolute;
+  top: 60px;
+  right: 10px;
+  z-index: 2000;
+  display: flex;
+  width: 214px;
+  max-height: calc(100vh - 80px);
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+#rightControls > #filters,
+#rightControls > #rabbiSearchBox,
+#rightControls > #seferSearchBox,
+#rightControls > #sizeControl {
+  position: static;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+
+#rightControls #rabbiSearchInput,
+#rightControls #seferSearchInput {
+  width: min(135px, calc(100% - 42px));
+  min-width: 0;
+}
+
+#eventPanel {
+  left: 295px;
+}
+
+@media (max-width: 700px) {
+  #yearNav {
+    left: 52px;
+    max-width: calc(100vw - 60px);
+    overflow-x: auto;
+  }
+
+  #jumpYearInput {
+    width: 62px;
+  }
+
+  #rightControls {
+    top: 58px;
+    right: 8px;
+    width: min(205px, calc(100vw - 16px));
+    max-height: calc(100vh - 170px);
+  }
+
+  #eventPanel {
+    left: 8px;
+  }
+}
+
+#seferDetailPanel {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  z-index: 1000000;
+  display: none;
+  width: min(460px, calc(100vw - 30px));
+  max-height: calc(100vh - 140px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 18px;
+  border: 1px solid rgba(91, 68, 37, 0.35);
+  border-radius: 13px;
+  background: rgba(250, 246, 236, 0.98);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.3);
+  color: #30271c;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+#seferDetailPanel.open {
+  display: block;
+}
+
+#seferDetailPanel h2 {
+  margin: 0 32px 14px 0;
+  font-size: 21px;
+}
+
+#seferDetailClose {
+  float: right;
+  border: 0;
+  background: transparent;
+  color: #5a4933;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.sefer-section-card {
+  margin: 10px 0;
+  padding: 13px 14px;
+  border-left: 4px solid #927346;
+  border-radius: 7px;
+  background: #fffdf7;
+  box-shadow: 0 2px 8px rgba(65, 48, 26, 0.12);
+}
+
+.sefer-section-card h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.sefer-section-subtitle {
+  margin-bottom: 9px;
+  color: #76654e;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.sefer-section-content {
+  line-height: 1.55;
+}
+
+.sefer-section-empty {
+  color: #76654e;
+  font-style: italic;
+}
+
+.sefer-source-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: #64471f;
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  #seferDetailPanel {
+    top: 12px;
+    right: 12px;
+    max-height: calc(100vh - 24px);
+  }
 }

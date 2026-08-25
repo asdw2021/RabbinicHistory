@@ -5,8 +5,11 @@
   <title>Rabbinic History Map</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="preconnect" href="https://server.arcgisonline.com" />
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="static/css/styles.css?v=story4" />
+<link rel="stylesheet" href="static/css/styles.css?v=controls6" />
 </head>
 
 <body>
@@ -15,6 +18,8 @@
 
   <div id="yearNav">
     <button id="prevYear">⬅ Prev</button>
+    <input id="jumpYearInput" type="number" inputmode="numeric" placeholder="Year" aria-label="Jump to year" />
+    <button id="jumpYearButton">Jump</button>
     <button id="nextYear">Next ➡</button>
   </div>
 
@@ -26,13 +31,17 @@
     <button id="applyRange">Set</button>
   </div>
 
+  <div id="rightControls">
   <div id="filters">
     <label><input type="checkbox" id="toggleRabbis" checked /> Rabbis</label>
     <label><input type="checkbox" id="toggleShuls" checked /> Shuls</label>
     <label><input type="checkbox" id="togglePersonalities" checked /> Personalities</label>
     <label><input type="checkbox" id="toggleBattles" checked /> Battles</label>
+    <label><input type="checkbox" id="toggleTemporaryRegions" checked /> Regions</label>
     <label><input type="checkbox" id="toggleEvents" checked /> Events</label>
-    <label><input type="checkbox" id="toggleRabbiEvents" checked /> Rabbi Events</label>
+    <label><input type="checkbox" id="toggleSefarim" checked /> Sefarim</label>
+    <label><input type="checkbox" id="toggleRabbiEvents" checked /> Pop Ups</label>
+    <label><input type="checkbox" id="toggleDemographics" /> Demographics</label>
   </div>
 
   <div id="rabbiSearchBox">
@@ -47,9 +56,15 @@
     <button id="rabbiSearchButton">Go</button>
   </div>
 
+  <div id="seferSearchBox">
+    <input id="seferSearchInput" list="seferSearchList" placeholder="Search sefer..." />
+    <datalist id="seferSearchList"></datalist>
+    <button id="seferSearchButton">Go</button>
+  </div>
+
   <div id="sizeControl">
     <label>
-      Rabbi Size
+      Icon Size
       <input
         type="range"
         id="rabbiSizeSlider"
@@ -62,21 +77,26 @@
 
     <label style="display:block;margin-top:6px;">
       <input type="checkbox" id="toggleRabbiNames" checked />
-      Show Rabbi Names
+      Show Name
     </label>
+
+    <label style="display:block;margin-top:6px;">
+      <input type="checkbox" id="toggleRabbiPictures" checked />
+      Show Icon
+    </label>
+  </div>
   </div>
 
   <!-- Rabbi Video / Story Mode -->
   <div id="storyControl">
     <div id="storyHeader">
-      <span>Rabbi Story Mode</span>
+      <span>Follow a Story</span>
       <span id="storyDropdownArrow">▾</span>
     </div>
 
     <div id="storyBody">
-      <select id="storyRabbiSelect">
-        <option value="">Select rabbi...</option>
-      </select>
+      <input id="storyRabbiSelect" list="storyRabbiOptions" placeholder="Type a name..." autocomplete="off" />
+      <datalist id="storyRabbiOptions"></datalist>
 
       <select id="storySpeed">
         <option value="6000">Slow</option>
@@ -110,7 +130,37 @@
     <div id="eventBox"></div>
   </div>
 
+  <div id="seferDetailPanel" aria-hidden="true">
+    <button id="seferDetailClose" aria-label="Close book details">×</button>
+    <h2 id="seferDetailTitle">Sefer details</h2>
+    <div id="seferDetailSections"></div>
+  </div>
+
+  <div id="demographicEditor">
+    <button id="demographicEditorToggle">Demographic Data</button>
+    <div id="demographicEditorBody">
+      <div class="demographic-grid">
+        <label>Place<input id="demographicPlace" placeholder="e.g. Baghdad" /></label>
+        <label>Statistic<input id="demographicLabel" placeholder="e.g. Jewish population" /></label>
+        <label>Value<input id="demographicValue" type="number" min="0" /></label>
+        <label>Total (optional)<input id="demographicTotal" type="number" min="0" /></label>
+        <label>Start year<input id="demographicStart" type="number" /></label>
+        <label>End year<input id="demographicEnd" type="number" /></label>
+        <label>Latitude<input id="demographicLat" type="number" step="any" /></label>
+        <label>Longitude<input id="demographicLng" type="number" step="any" /></label>
+        <label>Colour<input id="demographicColor" type="color" value="#3568a8" /></label>
+      </div>
+      <div class="demographic-actions">
+        <button id="demographicUseCenter">Use map centre</button>
+        <button id="demographicSave">Add statistic</button>
+        <button id="demographicExport">Export JSON</button>
+      </div>
+      <div id="demographicMessage"></div>
+      <div id="demographicEntries"></div>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="static/js/app.js?v=story4"></script>
+<script src="static/js/app.js?v=controls6"></script>
 </body>
 </html>
