@@ -1260,7 +1260,10 @@ function getHebrewRabbiLabel(r) {
   if (r._hebrewMapLabel) return r._hebrewMapLabel;
   const baseName = String(r.base_name || "").trim();
   const recordName = String(r.name || "").trim();
-  const latinAlias = flattenSearchValues(r.aliases)
+  const aliasValues = Array.isArray(r.aliases)
+    ? r.aliases
+    : String(r.aliases || "").split(/[|;]/);
+  const latinAlias = aliasValues
     .map(value => String(value || "").trim())
     .find(value => /[A-Za-z]/.test(value));
   const readableName =
