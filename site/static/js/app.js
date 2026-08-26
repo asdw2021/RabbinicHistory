@@ -44,6 +44,7 @@ let layer = null;
 let currentBorderYear = null;
 let currentYear = null;
 let ACTIVE_YEARS = [];
+let searchHighlightedMarker = null;
 let currentIndex = 0;
 let showToken = 0;
 let sliderTimer = null;
@@ -3644,6 +3645,12 @@ async function jumpToRabbi() {
     return;
   }
 
+  if (r._entityKind === "rabbi") {
+    filters.rabbis.checked = true;
+  } else if (r._entityKind === "personality") {
+    filters.personalities.checked = true;
+  }
+
   const moves =
     (
       RABBIS_MOV[r.name] ||
@@ -3725,9 +3732,23 @@ async function jumpToRabbi() {
       pos,
       Math.max(
         map.getZoom(),
-        8
+        12
       )
     );
+
+    const revealSelectedMarker = () => {
+      if (searchHighlightedMarker && searchHighlightedMarker !== r._marker) {
+        searchHighlightedMarker.setZIndexOffset?.(0);
+      }
+      if (r._marker) {
+        r._marker.setZIndexOffset?.(10000);
+        r._marker.openPopup?.();
+        searchHighlightedMarker = r._marker;
+      }
+    };
+
+    requestAnimationFrame(revealSelectedMarker);
+    map.once("moveend", revealSelectedMarker);
   }
 }
 
