@@ -1253,8 +1253,17 @@ function getEntityMapEndYear(entity) {
     return death;
   }
 
-  const mapEnd = Number(entity?.map_end_year);
-  return Number.isFinite(mapEnd) ? mapEnd : Infinity;
+  const rawMapEnd = entity?.map_end_year;
+  if (
+    rawMapEnd !== undefined &&
+    rawMapEnd !== null &&
+    rawMapEnd !== ""
+  ) {
+    const mapEnd = Number(rawMapEnd);
+    if (Number.isFinite(mapEnd)) return mapEnd;
+  }
+
+  return Infinity;
 }
 
 function getHebrewRabbiLabel(r) {
