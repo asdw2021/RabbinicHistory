@@ -1258,25 +1258,27 @@ function getEntityMapEndYear(entity) {
 
 function getHebrewRabbiLabel(r) {
   if (r._hebrewMapLabel) return r._hebrewMapLabel;
-  const candidates = [r.hebrew_name, r.name_he, r.hebrew, r.name, r.base_name];
-  let hebrew = candidates.find(value => /[\u0590-\u05ff]/.test(String(value || "")));
+  const baseName = String(r.base_name || "").trim();
+  const recordName = String(r.name || "").trim();
+  const latinAlias = flattenSearchValues(r.aliases)
+    .map(value => String(value || "").trim())
+    .find(value => /[A-Za-z]/.test(value));
+  const readableName =
+    (/[A-Za-z]/.test(baseName) ? baseName : "") ||
+    latinAlias ||
+    baseName ||
+    recordName ||
+    "Unknown rabbi";
+  const cleanName = readableName
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/^\s*(?:rabbi|rav|r['’׳]?)\s+/iu, "")
+    .replace(/^\s*(?:רבי|הרב|ר[׳']?)\s+/u, "")
+    .replace(/\s+/g, " ").trim();
 
-  if (hebrew) {
-    hebrew = String(hebrew)
-      .replace(/\([^)]*[A-Za-z][^)]*\)/g, " ")
-      .replace(/[A-Za-z][A-Za-z .'’-]*/g, " ")
-      .replace(/^\s*(?:רבי|הרב|ר[׳']?)\s+/u, "")
-      .replace(/\s+/g, " ").trim();
-    r._hebrewMapLabel = `ר׳ ${hebrew || "ללא שם"}`;
-  } else {
-    // Never invent a Hebrew spelling letter-by-letter. It can look plausible
-    // while displaying a name the person was never actually known by.
-    const establishedName = String(r.base_name || r.name || "Unknown rabbi")
-      .replace(/\([^)]*\)/g, " ")
-      .replace(/^\s*(?:rabbi|rav|r['’]?)\s+/i, "")
-      .replace(/\s+/g, " ").trim();
-    r._hebrewMapLabel = `R׳ ${establishedName}`;
-  }
+  // Prefer the record's established Latin/base name. This is consistently
+  // readable across browsers and avoids ever fabricating a Hebrew spelling.
+  // A Hebrew-only record remains Hebrew rather than being transliterated.
+  r._hebrewMapLabel = `R' ${cleanName || "Unknown rabbi"}`;
   return r._hebrewMapLabel;
 }
 
