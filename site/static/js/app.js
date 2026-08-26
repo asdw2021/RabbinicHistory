@@ -1270,6 +1270,15 @@ function getHebrewRabbiLabel(r) {
   if (r._hebrewMapLabel) return r._hebrewMapLabel;
   const baseName = String(r.base_name || "").trim();
   const recordName = String(r.name || "").trim();
+  const hasHebrewRecordName = /[\u0590-\u05ff]/u.test(recordName);
+
+  // Preserve the researched canonical Hebrew label exactly, including
+  // deliberate non-rabbinic exceptions such as biblical personalities.
+  if (hasHebrewRecordName) {
+    r._hebrewMapLabel = recordName;
+    return r._hebrewMapLabel;
+  }
+
   const aliasValues = Array.isArray(r.aliases)
     ? r.aliases
     : String(r.aliases || "").split(/[|;]/);
@@ -1288,9 +1297,8 @@ function getHebrewRabbiLabel(r) {
     .replace(/^\s*(?:רבי|הרב|ר[׳']?)\s+/u, "")
     .replace(/\s+/g, " ").trim();
 
-  // Prefer the record's established Latin/base name. This is consistently
-  // readable across browsers and avoids ever fabricating a Hebrew spelling.
-  // A Hebrew-only record remains Hebrew rather than being transliterated.
+  // Legacy records without a researched Hebrew name retain a readable Latin
+  // fallback until their source JSON is upgraded.
   r._hebrewMapLabel = `R' ${cleanName || "Unknown rabbi"}`;
   return r._hebrewMapLabel;
 }
