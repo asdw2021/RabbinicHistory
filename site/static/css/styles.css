@@ -72,6 +72,43 @@ body,
   margin: 0 4px;
 }
 
+#mapDisclaimer {
+  position: absolute;
+  right: 10px;
+  bottom: 48px;
+  z-index: 1000010;
+  width: min(310px, calc(100vw - 20px));
+  box-sizing: border-box;
+  padding: 7px 9px;
+  border: 1px solid rgba(68, 68, 68, 0.5);
+  border-radius: 8px;
+  background: rgba(247, 245, 238, 0.985);
+  color: #292929;
+  box-shadow: 0 2px 9px rgba(0, 0, 0, 0.22);
+  font: 11px/1.35 "Segoe UI", sans-serif;
+}
+
+#mapDisclaimer summary {
+  cursor: pointer;
+  font-weight: 750;
+  user-select: none;
+}
+
+#mapDisclaimer[open] summary {
+  margin-bottom: 4px;
+}
+
+.map-disclaimer-text {
+  max-height: 120px;
+  overflow: auto;
+}
+
+#mapDisclaimer a {
+  color: #245b87;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
 #filters {
   position: absolute;
   top: 60px;
@@ -449,6 +486,21 @@ body,
   display: none;
 }
 
+/* Keep every popup compact so long biographies and descriptions scroll
+   internally instead of forcing Leaflet to pan the map a long distance. */
+.leaflet-popup-content {
+  max-height: min(38vh, 270px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: 5px;
+}
+
+.leaflet-popup-content img {
+  max-height: 110px !important;
+}
+
 .entity-popup-title {
   margin: 2px 0 5px;
   color: #5e5548;
@@ -543,6 +595,94 @@ body,
 
 #sizeControl input {
   width: 120px;
+}
+
+.rabbi-display-heading {
+  margin-bottom: 8px;
+  color: #263a32;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.rabbi-size-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+  color: #46544e;
+  font-size: 12px;
+}
+
+#sizeControl .rabbi-size-row input[type="range"] {
+  width: 100%;
+  min-width: 0;
+}
+
+.rabbi-label-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin-top: 9px;
+  padding: 2px;
+  border-radius: 9px;
+  background: #e5eae7;
+}
+
+.rabbi-mode-button {
+  min-width: 0;
+  padding: 6px 5px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #53615b;
+  font: 600 11px/1.1 "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+.rabbi-mode-button.active {
+  background: #fff;
+  color: #1f4b39;
+  box-shadow: 0 1px 4px rgba(25, 45, 36, 0.2);
+}
+
+.rabbi-display-checks {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(52, 67, 60, 0.12);
+  color: #3e4a45;
+  font-size: 12px;
+}
+
+.rabbi-display-checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#sizeControl .rabbi-display-checks input[type="checkbox"] {
+  width: auto;
+}
+
+#rightControls > #sizeControl {
+  display: block;
+  padding: 11px 12px;
+  overflow: hidden;
+  border: 1px solid rgba(52, 67, 60, 0.18);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+#rightControls > #sizeControl * {
+  box-sizing: border-box;
+}
+
+#rightControls > #sizeControl .rabbi-mode-button {
+  width: 100%;
+  min-height: 28px;
+  white-space: nowrap;
 }
 
 #rabbiSearchBox,
@@ -1229,6 +1369,20 @@ body.story-active #year {
     margin: 0;
   }
 
+  #mapDisclaimer {
+    position: fixed;
+    right: calc(8px + var(--mobile-safe-right));
+    bottom: calc(148px + var(--mobile-safe-bottom));
+    width: min(300px, calc(100vw - 16px - var(--mobile-safe-left) - var(--mobile-safe-right)));
+    max-height: 24dvh;
+    padding: 6px 8px;
+    font-size: 10.5px;
+  }
+
+  #mapDisclaimer .map-disclaimer-text {
+    max-height: calc(24dvh - 30px);
+  }
+
   #rangeBox {
     position: fixed;
     right: calc(8px + var(--mobile-safe-right));
@@ -1355,8 +1509,9 @@ body.story-active #year {
 
   .leaflet-popup-content {
     max-width: calc(100vw - 78px);
-    max-height: 55dvh;
-    overflow: auto;
+    max-height: min(38dvh, 260px);
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .leaflet-control-attribution {
@@ -1382,4 +1537,3 @@ body.story-active #year {
     max-width: 25vw;
   }
 }
-

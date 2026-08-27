@@ -1,6 +1,7 @@
 let RABBI_SCALE = 0.65;
 let SHOW_RABBI_NAMES = true;
 let SHOW_RABBI_PICTURES = true;
+let RABBI_NAME_MODE = "full";
 let MOVE_DURATION = 320;
 
 const CITY_MIN_ZOOM = 4;
@@ -17,6 +18,8 @@ const seferSearchButton = document.getElementById("seferSearchButton");
 const seferSearchList = document.getElementById("seferSearchList");
 const toggleRabbiNames = document.getElementById("toggleRabbiNames");
 const toggleRabbiPictures = document.getElementById("toggleRabbiPictures");
+const rabbiNameModeFull = document.getElementById("rabbiNameModeFull");
+const rabbiNameModeCommon = document.getElementById("rabbiNameModeCommon");
 let colors = {};
 let YEARS = [];
 let BORDER_YEARS = [];
@@ -1201,9 +1204,17 @@ function getDisplayName(
   r,
   y
 ) {
+  const canonicalName = String(r.name || "").trim();
+  if (
+    r._entityKind === "rabbi" &&
+    /[\u0590-\u05ff]/u.test(canonicalName)
+  ) {
+    return canonicalName;
+  }
+
   return String(
     r.base_name ||
-    r.name ||
+    canonicalName ||
     "Unknown person"
   ).trim();
 }
@@ -1272,8 +1283,9 @@ function getHebrewRabbiLabel(r) {
   const recordName = String(r.name || "").trim();
   const hasHebrewRecordName = /[\u0590-\u05ff]/u.test(recordName);
 
-  // Preserve the researched canonical Hebrew label exactly, including
-  // deliberate non-rabbinic exceptions such as biblical personalities.
+  // The canonical `name` field already contains the researched Hebrew map
+  // label. Preserve it exactly, including deliberate exceptions such as
+  // biblical personalities that must not receive a rabbinic prefix.
   if (hasHebrewRecordName) {
     r._hebrewMapLabel = recordName;
     return r._hebrewMapLabel;
@@ -1303,8 +1315,50 @@ function getHebrewRabbiLabel(r) {
   return r._hebrewMapLabel;
 }
 
+function getCommonRabbiLabel(r) {
+  const explicit = String(
+    r.known_as || r.common_name || r.commonly_known_as || ""
+  ).trim();
+  if (explicit) return explicit;
+
+  // Never promote a sentence-length office description from `title` into a
+  // map label. New records should define `known_as`; a legacy record safely
+  // keeps its canonical Hebrew name, including the ר׳ prefix.
+  return getHebrewRabbiLabel(r);
+
+  const genericTitle = /^(?:רב(?:ה| הראשי)?|ראש |אב״ד|ראב״ד|דיין|פוסק|מחבר|מגיד|מנהיג|מקובל|חכם|תלמיד|מורה)/u;
+  const titleParts = String(r.title || "")
+    .split(/[;·|]/)
+    .map(value => value.trim())
+    .filter(Boolean);
+  const titleChoice = titleParts.find(value => !genericTitle.test(value));
+  if (titleChoice) {
+    const conciseTitle = titleChoice
+      .split(/,\s*(?=(?:רב|ראש|אב״ד|ראב״ד|דיין|פוסק|מחבר|מגיד|מנהיג|מקובל|חכם))/u)[0]
+      .replace(/^בעל\s+/u, "")
+      .trim();
+    return conciseTitle || titleChoice;
+  }
+
+  const aliases = Array.isArray(r.aliases)
+    ? r.aliases
+    : String(r.aliases || "").split(/[|;]/);
+  const candidates = aliases
+    .map(value => String(value || "").trim())
+    .filter(value => value && /[\u0590-\u05ff]/u.test(value))
+    .filter(value => !/^(?:ר׳|רבי|הרב)\s+/u.test(value))
+    .filter(value => value.length <= 28);
+  const quoted = candidates.find(value => /[״"]/u.test(value));
+  if (quoted) return quoted;
+  if (candidates[0]) return candidates[0].replace(/^בעל\s+/u, "").trim();
+  return getHebrewRabbiLabel(r);
+}
+
 function getMapEntityLabel(r, y) {
-  return r._entityKind === "rabbi" ? getHebrewRabbiLabel(r) : getDisplayName(r, y);
+  if (r._entityKind !== "rabbi") return getDisplayName(r, y);
+  return RABBI_NAME_MODE === "common"
+    ? getCommonRabbiLabel(r)
+    : getHebrewRabbiLabel(r);
 }
 
 function buildEntityPopup(
@@ -1532,28 +1586,32 @@ function buildGroupHTML(
     40 * RABBI_SCALE;
 
   const baseImg =
-    SHOW_RABBI_PICTURES && !window.__EMBEDDED_DATA__
-      ? `<img src="https://upload.wikimedia.org/wikipedia/commons/8/81/%D7%99%D7%A9%D7%99%D7%91%D7%AA_%D7%94%D7%A0%D7%98%D7%A2_%D7%A9%D7%95%D7%A8%D7%A7_%D7%9E%D7%98%D7%A9%D7%90%D7%98%D7%90_%D7%A8%D7%91%D7%99_%D7%A9%D7%A8%D7%92%D7%90_%D7%A6%D7%91%D7%99_%D7%98%D7%A2%D7%A0%D7%A2%D7%A0%D7%91%D7%95%D7%99%D7%9D.jpg" loading="lazy" decoding="async"
-      class="rabbi-group-img"
+    `<div
+      class="rabbi-group-img rabbi-count-cluster"
+      role="button"
+      aria-label="Open ${rs.length} rabbis"
+      title="${rs.length} rabbis"
       style="
         pointer-events:auto;
         cursor:pointer;
         width:${groupSize}px;
         height:${groupSize}px;
-        object-fit:cover;
+        min-width:${groupSize}px;
         border-radius:50%;
-        border:1px solid #333;
-      ">`
-      : `<div
-          class="rabbi-group-img"
-          style="
-            width:${groupSize}px;
-            height:${groupSize}px;
-            border-radius:50%;
-            background:#777;
-            border:1px solid #333;
-          "
-        ></div>`;
+        box-sizing:border-box;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:#62676d;
+        color:#fff;
+        border:${Math.max(1, 1.5 * RABBI_SCALE)}px solid rgba(255,255,255,0.95);
+        box-shadow:0 2px 8px rgba(0,0,0,0.65);
+        font-size:${Math.max(10, 14 * RABBI_SCALE)}px;
+        line-height:1;
+        font-weight:800;
+        font-family:Arial, sans-serif;
+        font-variant-numeric:tabular-nums;
+      ">${rs.length}</div>`;
 
   let namesHTML =
     SHOW_RABBI_NAMES
@@ -2603,49 +2661,112 @@ function renderRabbis(
   }
 }
 
+const RABBI_CLUSTER_OVERLAP_RATIO = 0.85;
+
+function circleOverlapRatio(a, b) {
+  const dx = a.point.x - b.point.x;
+  const dy = a.point.y - b.point.y;
+  const distance = Math.hypot(dx, dy);
+  const r1 = a.radius;
+  const r2 = b.radius;
+  const smallerArea = Math.PI * Math.min(r1, r2) ** 2;
+
+  if (!smallerArea || distance >= r1 + r2) return 0;
+  if (distance <= Math.abs(r1 - r2)) return 1;
+
+  const angle1 = 2 * Math.acos(
+    Math.max(-1, Math.min(1, (distance ** 2 + r1 ** 2 - r2 ** 2) / (2 * distance * r1)))
+  );
+  const angle2 = 2 * Math.acos(
+    Math.max(-1, Math.min(1, (distance ** 2 + r2 ** 2 - r1 ** 2) / (2 * distance * r2)))
+  );
+  const overlapArea =
+    0.5 * r1 ** 2 * (angle1 - Math.sin(angle1)) +
+    0.5 * r2 ** 2 * (angle2 - Math.sin(angle2));
+
+  return overlapArea / smallerArea;
+}
+
+function clusterVisibleRabbis(arrivals) {
+  const groupRadius = 20 * RABBI_SCALE;
+  const pictureRadius = 20 * RABBI_SCALE;
+  const dotRadius = 10 * RABBI_SCALE;
+  const clusters = arrivals.map(entry => {
+    const hasPicture = Boolean(entry.r.img || entry.r.image);
+    return {
+      rabbis: [entry.r],
+      point: map.latLngToLayerPoint(entry.pos),
+      radius: SHOW_RABBI_PICTURES && hasPicture ? pictureRadius : dotRadius,
+      followed: isFollowedRabbi(entry.r)
+    };
+  });
+
+  // Repeated merging lets a newly joined circle absorb another icon too.
+  while (true) {
+    let bestPair = null;
+    let bestOverlap = RABBI_CLUSTER_OVERLAP_RATIO;
+
+    for (let i = 0; i < clusters.length; i += 1) {
+      for (let j = i + 1; j < clusters.length; j += 1) {
+        if (clusters[i].followed || clusters[j].followed) continue;
+        const overlap = circleOverlapRatio(clusters[i], clusters[j]);
+        if (overlap >= bestOverlap) {
+          bestOverlap = overlap;
+          bestPair = [i, j];
+        }
+      }
+    }
+
+    if (!bestPair) break;
+
+    const [i, j] = bestPair;
+    const first = clusters[i];
+    const second = clusters[j];
+    const firstWeight = first.rabbis.length;
+    const secondWeight = second.rabbis.length;
+    const totalWeight = firstWeight + secondWeight;
+    const merged = {
+      rabbis: [...first.rabbis, ...second.rabbis],
+      point: L.point(
+        (first.point.x * firstWeight + second.point.x * secondWeight) / totalWeight,
+        (first.point.y * firstWeight + second.point.y * secondWeight) / totalWeight
+      ),
+      radius: groupRadius,
+      followed: false
+    };
+
+    clusters.splice(j, 1);
+    clusters.splice(i, 1, merged);
+  }
+
+  return clusters.map(cluster => ({
+    pos: map.layerPointToLatLng(cluster.point),
+    rabbis: cluster.rabbis
+  }));
+}
+
 function groupVisibleRabbis(
   arrivals,
   y
 ) {
-  const groups = {};
-
-  arrivals.forEach(
-    entry => {
-      const followed =
-        isFollowedRabbi(
-          entry.r
-        );
-
-      const key =
-        followed
-          ? `followed:${entry.r.name}`
-          : `place:${entry.pos[0]},${entry.pos[1]}`;
-
-      if (!groups[key]) {
-        groups[key] = {
-          pos: entry.pos,
-          rabbis: []
-        };
-      }
-
-      groups[key].rabbis.push(
-        entry.r
-      );
-    }
-  );
+  const groups = clusterVisibleRabbis(arrivals);
 
   const nextGroupKeys = new Set();
   activeGroupMarkers.clear();
   PEOPLE.forEach(r => { r._groupMarker = null; });
 
-  Object.entries(groups)
+  groups
     .forEach(
-      ([groupKey, group]) => {
+      group => {
         const pos =
           group.pos;
 
         const rs =
           group.rabbis;
+
+        const groupKey = rs.length > 1
+          ? `cluster:${rs.map(r => r.name).sort().join("|")}`
+          : `single:${rs[0].name}`;
 
         if (
           rs.length > 1
@@ -3219,6 +3340,18 @@ async function setupControlsAndDraw() {
     );
   }
 
+  const setRabbiNameMode = mode => {
+    RABBI_NAME_MODE = mode === "common" ? "common" : "full";
+    const fullActive = RABBI_NAME_MODE === "full";
+    rabbiNameModeFull?.classList.toggle("active", fullActive);
+    rabbiNameModeCommon?.classList.toggle("active", !fullActive);
+    rabbiNameModeFull?.setAttribute("aria-pressed", String(fullActive));
+    rabbiNameModeCommon?.setAttribute("aria-pressed", String(!fullActive));
+    refreshRabbiMarkerSizes();
+  };
+  rabbiNameModeFull?.addEventListener("click", () => setRabbiNameMode("full"));
+  rabbiNameModeCommon?.addEventListener("click", () => setRabbiNameMode("common"));
+
   if (seferSearchButton && seferSearchInput) {
     seferSearchButton.addEventListener("click", jumpToSefer);
     seferSearchInput.addEventListener("keydown", event => {
@@ -3426,6 +3559,7 @@ async function setupControlsAndDraw() {
         drawCities(currentYear);
         drawDemographics(currentYear);
         drawShuls(currentYear, false, []);
+        renderRabbis(currentYear, false);
         refreshRabbiEventPopupsForZoom();
         updateFollowedRabbiTravelScale();
 
@@ -5567,4 +5701,3 @@ function stopFollowPlayback({
 }
 
 main();
-

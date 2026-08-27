@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://server.arcgisonline.com" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="static/css/styles.css?v=rabbi-search1" />
+<link rel="stylesheet" href="static/css/styles.css?v=map-ui-20260828" />
 </head>
 
 <body>
@@ -69,8 +69,9 @@
   </div>
 
   <div id="sizeControl">
-    <label>
-      Icon Size
+    <div class="rabbi-display-heading">Rabbi labels</div>
+    <label class="rabbi-size-row">
+      <span>Icon size</span>
       <input
         type="range"
         id="rabbiSizeSlider"
@@ -81,15 +82,14 @@
       />
     </label>
 
-    <label style="display:block;margin-top:6px;">
-      <input type="checkbox" id="toggleRabbiNames" checked />
-      Show Name
-    </label>
-
-    <label style="display:block;margin-top:6px;">
-      <input type="checkbox" id="toggleRabbiPictures" checked />
-      Show Icon
-    </label>
+    <div class="rabbi-label-mode" role="group" aria-label="Rabbi name style">
+      <button id="rabbiNameModeFull" class="rabbi-mode-button active" type="button" aria-pressed="true">Full name</button>
+      <button id="rabbiNameModeCommon" class="rabbi-mode-button" type="button" aria-pressed="false">Known as</button>
+    </div>
+    <div class="rabbi-display-checks">
+      <label><input type="checkbox" id="toggleRabbiNames" checked /> Name</label>
+      <label><input type="checkbox" id="toggleRabbiPictures" checked /> Icon</label>
+    </div>
   </div>
   </div>
 
@@ -166,8 +166,19 @@
     </div>
   </div>
 
+  <details id="mapDisclaimer" open>
+    <summary>Map under construction</summary>
+    <div class="map-disclaimer-text">
+      This animated map is under construction and may contain errors.
+      AI-assisted research and presentation have been used and may introduce inaccuracies.
+      Assumptions have necessarily been made for many movements, which should be treated as approximate.
+      Sources are included wherever possible.
+      Suggested alterations, corrections or comments are welcome at
+      <a href="mailto:as.dworkin@gmail.com">as.dworkin@gmail.com</a>.
+    </div>
+  </details>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="static/js/app.js?v=hebrew-labels1"></script>
+<script src="static/js/app.js?v=map-ui-20260828"></script>
 </body>
 </html>
-
