@@ -3617,8 +3617,10 @@ function refreshRabbiEventPopupsForZoom() {
 
   PEOPLE.forEach(r => {
     const marker = r._marker;
-    const moveEvent = r._movementEventsByYear?.get(Number(currentYear));
     const followed = isFollowedRabbi(r);
+    const moveEvent = followActive && followed
+      ? getFollowEventAtYear(r, currentYear)
+      : r._movementEventsByYear?.get(Number(currentYear));
     const markerVisible = marker && marker.options.opacity !== 0 && !r._groupMarker;
     const shouldShow = markerVisible && moveEvent && (followActive ? followed : zoomAllowsEvents);
 
@@ -3925,7 +3927,7 @@ function getFollowMovements(entity) {
     return followMovementCache.get(entity.name);
   }
 
-  const movements = [
+  let movements = [
     ...(
       RABBIS_MOV[
         entity.name
@@ -3951,6 +3953,31 @@ function getFollowMovements(entity) {
       Number(a.year) -
       Number(b.year)
   );
+
+  const birthYear = Number(entity.birth_year);
+  const hasBirthChapter = movements.some(
+    movement => Number(movement.year) === birthYear
+  );
+
+  if (
+    entity._entityKind === "rabbi" &&
+    Number.isFinite(birthYear) &&
+    !hasBirthChapter &&
+    movements.length
+  ) {
+    const firstLocation = getRecordLatLng(movements[0]);
+    if (firstLocation) {
+      movements = [
+        {
+          year: birthYear,
+          place: "Birthplace not securely documented",
+          event: `<b>${entity.name}</b> was born around ${birthYear}. The birthplace is not securely documented; the marker is shown at the earliest documented location only as a visual approximation.`,
+          latlng: firstLocation
+        },
+        ...movements
+      ];
+    }
+  }
 
   followMovementCache.set(entity.name, movements);
   return movements;
@@ -4309,26 +4336,20 @@ function findFollowStartIndex(entity) {
       entity
     );
 
-  const firstRecordedYear =
-    moves.length
-      ? Number(
-          moves[0].year
-        )
-      : Number(
-          entity.birth_year
-        );
-
   const birthYear =
     Number(
       entity.birth_year
     );
 
-  const startYear =
-    Number.isFinite(
-      firstRecordedYear
-    )
-      ? firstRecordedYear
+  const firstRecordedYear =
+    moves.length
+      ? Number(moves[0].year)
       : birthYear;
+
+  const startYear =
+    Number.isFinite(birthYear)
+      ? birthYear
+      : firstRecordedYear;
 
   if (!ACTIVE_YEARS.length || !Number.isFinite(startYear)) return -1;
 
@@ -4946,6 +4967,34 @@ async function startOrResumeFollow() {
   updateFollowStatus(
     `Following ${entity.name} — ${ACTIVE_YEARS[currentIndex]}`
   );
+
+  // Always present the birth chapter before playback advances to a later
+  // movement. Refresh after the initial marker has actually been drawn.
+  refreshRabbiEventPopupsForZoom();
+
+  const openingEvent = getFollowEventAtYear(
+    entity,
+    ACTIVE_YEARS[currentIndex]
+  );
+
+  if (openingEvent) {
+    updateFollowStatus(
+      `${entity.name} — ${ACTIVE_YEARS[currentIndex]}: ${openingEvent.event}`
+    );
+
+    // Give the opening chapter time to be read. Without this hold, playback
+    // advances almost immediately and the birth popup appears to be missing.
+    const openingPause = Math.min(
+      8000,
+      Math.max(3000, speedMs * 2.5)
+    );
+
+    await delay(openingPause);
+
+    if (!followActive || token !== followRunToken) {
+      return;
+    }
+  }
 
   runFollowTimeline(
     token
