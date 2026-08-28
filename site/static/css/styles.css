@@ -445,6 +445,16 @@ body,
   text-shadow: 0 1px 1px rgba(255, 255, 255, 0.85);
 }
 
+.plain-event-dot {
+  width: 10px;
+  height: 10px;
+  margin: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 50%;
+  background: #66717d;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.42);
+}
+
 .rabbi-single-name:hover,
 .rabbi-name:hover,
 .rabbi-label:hover,

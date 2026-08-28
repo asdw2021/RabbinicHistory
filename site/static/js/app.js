@@ -2030,9 +2030,7 @@ function getEventSymbol(ev) {
     /\bpersecution_pogrom_massacre\b/.test(searchable);
   if (isPogromOrKilling) return { text: "🔥", className: "fire-symbol" };
 
-  return ev.emoji
-    ? { text: ev.emoji, className: "default-event-symbol" }
-    : null;
+  return null;
 }
 
 function drawEvents(
@@ -2082,7 +2080,7 @@ function drawEvents(
             ? `<div class="event-symbol ${eventSymbol.className}">${eventSymbol.text}</div>`
             : ev.img
               ? `<img src="${ev.img}" loading="lazy" decoding="async" style="width:30px;height:30px;object-fit:contain;">`
-              : `<div style="font-size:20px;">📍</div>`;
+              : `<div class="plain-event-dot" aria-hidden="true"></div>`;
 
         ev._marker =
           L.marker(
@@ -2220,8 +2218,11 @@ function drawEvents(
       if (visible) {
         visibleEvents.push(ev);
         if (!isSefarim) {
+          const symbolPrefix = ev._symbol?.text
+            ? `${ev._symbol.text} `
+            : "";
           eventsList.push(
-            `${ev._symbol?.text || "📍"} ${ev.name} — ${ev.note || ev.event || ""}`
+            `${symbolPrefix}${ev.name} — ${ev.note || ev.event || ""}`
           );
         }
       }
