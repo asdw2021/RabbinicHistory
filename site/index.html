@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://server.arcgisonline.com" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="static/css/styles.css?v=event-icons-20260828" />
+<link rel="stylesheet" href="static/css/styles.css?v=performance-20260902" />
 </head>
 
 <body>
@@ -39,12 +39,13 @@
 
   <div id="rightControls" aria-label="Map options">
   <div id="filters">
-    <label><input type="checkbox" id="toggleRabbis" checked /> Rabbis</label>
+    <label><input type="checkbox" id="toggleRabbis" checked /> Rabbanim</label>
     <label><input type="checkbox" id="toggleShuls" checked /> Shuls</label>
     <label><input type="checkbox" id="togglePersonalities" checked /> Personalities</label>
     <label><input type="checkbox" id="toggleBattles" checked /> Battles</label>
     <label><input type="checkbox" id="toggleTemporaryRegions" checked /> Regions</label>
     <label><input type="checkbox" id="toggleEvents" checked /> Events</label>
+    <label><input type="checkbox" id="toggleMusic" /> Music</label>
     <label><input type="checkbox" id="toggleSefarim" checked /> Sefarim</label>
     <label><input type="checkbox" id="toggleRabbiEvents" /> Pop Ups</label>
     <label><input type="checkbox" id="toggleDemographics" /> Demographics</label>
@@ -54,7 +55,7 @@
     <input
       id="rabbiSearchInput"
       list="rabbiSearchList"
-      placeholder="Search rabbi..."
+      placeholder="Search Rabbanim..."
     />
 
     <datalist id="rabbiSearchList"></datalist>
@@ -69,22 +70,22 @@
   </div>
 
   <div id="sizeControl">
-    <div class="rabbi-display-heading">Rabbi labels</div>
+    <div class="rabbi-display-heading">Rabbanim labels</div>
     <label class="rabbi-size-row">
       <span>Icon size</span>
       <input
         type="range"
         id="rabbiSizeSlider"
         min="0.25"
-        max="1.5"
+        max="2.5"
         step="0.05"
-        value="0.65"
+        value="1.15"
       />
     </label>
 
-    <div class="rabbi-label-mode" role="group" aria-label="Rabbi name style">
-      <button id="rabbiNameModeFull" class="rabbi-mode-button active" type="button" aria-pressed="true">Full name</button>
-      <button id="rabbiNameModeCommon" class="rabbi-mode-button" type="button" aria-pressed="false">Known as</button>
+    <div class="rabbi-label-mode" role="group" aria-label="Rabbanim name style">
+      <button id="rabbiNameModeFull" class="rabbi-mode-button" type="button" aria-pressed="false">Full name</button>
+      <button id="rabbiNameModeCommon" class="rabbi-mode-button active" type="button" aria-pressed="true">Known as</button>
     </div>
     <div class="rabbi-display-checks">
       <label><input type="checkbox" id="toggleRabbiNames" checked /> Name</label>
@@ -120,7 +121,7 @@
 
   <div id="storyPanel">
     <button id="storyPanelClose">×</button>
-    <h2 id="storyTitle">Rabbi Story</h2>
+    <h2 id="storyTitle">Rabbinic Story</h2>
     <h3 id="storyYear"></h3>
     <div id="storyText"></div>
   </div>
@@ -179,6 +180,6 @@
   </details>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="static/js/app.js?v=event-icons-20260828"></script>
+<script src="static/js/app.js?v=portrait-labels-20260902"></script>
 </body>
 </html>

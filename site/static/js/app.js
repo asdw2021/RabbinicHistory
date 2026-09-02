@@ -1,8 +1,12 @@
-let RABBI_SCALE = 0.65;
+let RABBI_SCALE = 1.15;
 let SHOW_RABBI_NAMES = true;
 let SHOW_RABBI_PICTURES = true;
-let RABBI_NAME_MODE = "full";
+let RABBI_NAME_MODE = "common";
 let MOVE_DURATION = 320;
+
+const HOLD_STEP_INTERVAL = 250;
+const DEFAULT_RANGE_FROM = 500;
+const DEFAULT_RANGE_TO = 2024;
 
 const CITY_MIN_ZOOM = 4;
 const SHUL_MIN_ZOOM = 7;
@@ -31,6 +35,7 @@ let BATTLES = [];
 let TEMPORARY_REGIONS = [];
 let BIBLICAL_REGIONS = [];
 let EVENTS = [];
+let MUSIC = [];
 let SEFARIM = [];
 let RABBIS = [];
 let RABBIS_MOV = {};
@@ -68,11 +73,14 @@ const followMovementCache = new Map();
 let visibleMapEvents = [];
 let eventLayoutFrame = null;
 const eventsByYear = new Map();
+const musicByYear = new Map();
 const sefarimByYear = new Map();
 const activeGroupMarkers = new Set();
 const groupMarkersByKey = new Map();
 let demographicsLoadPromise = null;
 let shulsLoadPromise = null;
+let deferredContentLoadPromise = null;
+let deferredContentLoaded = false;
 
 const yearBox = document.getElementById("year");
 const slider = document.getElementById("slider");
@@ -99,6 +107,7 @@ const filters = {
   battles: document.getElementById("toggleBattles"),
   temporaryRegions: document.getElementById("toggleTemporaryRegions"),
   events: document.getElementById("toggleEvents"),
+  music: document.getElementById("toggleMusic"),
   sefarim: document.getElementById("toggleSefarim"),
   rabbiEvents: document.getElementById("toggleRabbiEvents"),
   demographics: document.getElementById("toggleDemographics")
@@ -453,15 +462,41 @@ function setupSeferDetails() {
   });
 }
 
+function setupMusicPlayback() {
+  document.addEventListener("click", event => {
+    const button = event.target.closest?.(".music-play-button");
+    if (!button) return;
+
+    const videoId = String(button.dataset.youtubeId || "");
+    if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) return;
+
+    const player = button.closest(".music-popup")?.querySelector(".music-player");
+    if (!player) return;
+
+    player.innerHTML = `<iframe
+      src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0"
+      title="Jewish music recording"
+      allow="autoplay; encrypted-media; picture-in-picture"
+      allowfullscreen
+      loading="eager"></iframe>`;
+    player.hidden = false;
+    button.hidden = true;
+  });
+}
+
 function buildEventIndex() {
   eventsByYear.clear();
+  musicByYear.clear();
   sefarimByYear.clear();
   SEFARIM = [];
 
-  EVENTS.forEach(event => {
+  [...EVENTS, ...MUSIC].forEach(event => {
     event._position = getRecordLatLng(event);
+    event._isMusic = event.category === "jewish_music";
     event._isSefer = isSeferEvent(event);
-    event._symbol = event._isSefer
+    event._symbol = event._isMusic
+      ? { text: "🎵", className: "default-event-symbol music-symbol" }
+      : event._isSefer
       ? { text: "📖", className: "default-event-symbol sefer-symbol" }
       : getEventSymbol(event);
     if (event._isSefer) SEFARIM.push(event);
@@ -473,7 +508,9 @@ function buildEventIndex() {
 
     const first = Number.isFinite(singleYear) ? singleYear : Math.ceil(Math.min(start, end));
     const last = Number.isFinite(singleYear) ? singleYear : Math.floor(Math.max(start, end));
-    const targetIndex = event._isSefer ? sefarimByYear : eventsByYear;
+    const targetIndex = event._isMusic
+      ? musicByYear
+      : event._isSefer ? sefarimByYear : eventsByYear;
     for (let year = first; year <= last; year++) {
       if (!targetIndex.has(year)) targetIndex.set(year, []);
       targetIndex.get(year).push(event);
@@ -767,44 +804,20 @@ async function loadInitialData() {
     YEARS,
     BORDER_YEARS,
     INITIAL_BORDER,
-    CITIES,
-    BATTLES,
-    TEMPORARY_REGIONS,
-    BIBLICAL_REGIONS,
-    EVENTS,
     RABBIS,
     RABBIS_MOV,
     PERSONALITIES,
-    PERSONALITIES_MOV,
-    BIBLE_PLACES
+    PERSONALITIES_MOV
   ] = await Promise.all([
     loadJSON("data/colors.json"),
     loadJSON("data/years.json"),
     loadJSON("data/border_years.json"),
     loadJSON("data/initial_border.json"),
-    loadJSON("data/cities.json"),
-    loadJSON("data/battles.json"),
-    loadJSON("data/temporary_regions.json"),
-    loadJSON("data/biblical_regions.json"),
-
-    loadAllEvents(),
-
     loadJSON("data/rabbis.json"),
     loadJSON("data/rabbis_movement.json"),
     loadJSON("data/personalities.json"),
-    loadJSON("data/personalities_movement.json"),
-    loadJSON("data/bible_places.json")
+    loadJSON("data/personalities_movement.json")
   ]);
-
-  const biblicalReplacementNames = new Set(
-    BIBLICAL_REGIONS.map(region => region.replaces || region.name)
-  );
-  TEMPORARY_REGIONS = TEMPORARY_REGIONS
-    .filter(region => !biblicalReplacementNames.has(region.name))
-    .concat(BIBLICAL_REGIONS.filter(region => !region.remove));
-
-  buildCityIndex();
-  buildEventIndex();
   buildPeopleIndexes();
 
   BORDER_YEARS = BORDER_YEARS
@@ -1361,6 +1374,18 @@ function getMapEntityLabel(r, y) {
     : getHebrewRabbiLabel(r);
 }
 
+function getPortraitPosition(r) {
+  const configured = String(r.image_position || r.portrait_position || "").trim();
+  // Permit ordinary CSS positions while preventing record data from injecting
+  // extra declarations into the inline marker styles.
+  if (/^(?:(?:left|center|right)|\d{1,3}%)(?:\s+(?:(?:top|center|bottom)|\d{1,3}%))?$/i.test(configured)) {
+    return configured;
+  }
+  // Most source photographs are portrait-oriented. Biasing the square/circle
+  // crop upward keeps the face visible instead of centring on the chest.
+  return "center 22%";
+}
+
 function buildEntityPopup(
   entities,
   year
@@ -1386,7 +1411,7 @@ function buildEntityPopup(
             title="${getDisplayName(r, y)}"
             class="rabbi-popup-img"
             data-rabbi-index="${idx}"
-            style="width:70px;height:70px;object-fit:cover;border-radius:50%;border:1px solid #333;margin:0 4px;cursor:pointer;">`;
+            style="width:70px;height:70px;object-fit:cover;object-position:${getPortraitPosition(r)};border-radius:50%;border:1px solid #333;margin:0 4px;cursor:pointer;">`;
         }
       ).join("");
 
@@ -1402,12 +1427,16 @@ function buildEntityPopup(
               y
             );
           const titleText = getEntityTitle(r, y);
+          const followAction = !followActive && (r._entityKind === "rabbi" || r._entityKind === "personality")
+            ? `<button class="popup-follow-button" type="button" data-follow-name="${escapeHTML(r.name)}">Follow Story</button>`
+            : "";
 
           return `
             <div style="margin-top:6px;">
               <strong>${escapeHTML(getDisplayName(r, y))}</strong>
               ${titleText ? `<div class="entity-popup-title">${escapeHTML(titleText)}</div>` : ""}
               ${yearsStr}${ageText ? " — " + ageText : ""}<br>
+              ${followAction}
               ${r.bio || ""}
             </div>
           `;
@@ -1432,10 +1461,14 @@ function buildEntityPopup(
   const imgHtml =
     imgSrc
       ? `<div style="margin-bottom:6px;">
-          <img src="${imgSrc}" loading="lazy" decoding="async"
-          style="max-width:150px;max-height:150px;border-radius:8px;border:1px solid #333;">
+          <img src="${escapeHTML(imgSrc)}" loading="lazy" decoding="async" referrerpolicy="no-referrer"
+          style="width:150px;height:150px;object-fit:cover;object-position:${getPortraitPosition(r)};border-radius:8px;border:1px solid #333;">
         </div>`
       : "";
+
+  const sourceHtml = r.source_url
+    ? `<div class="entity-popup-source"><a href="${escapeHTML(r.source_url)}" target="_blank" rel="noopener noreferrer">Institution or image source</a></div>`
+    : "";
 
   const yearsStr =
     getYearsText(r);
@@ -1446,13 +1479,18 @@ function buildEntityPopup(
       y
     );
   const titleText = getEntityTitle(r, y);
+  const followAction = !followActive && (r._entityKind === "rabbi" || r._entityKind === "personality")
+    ? `<button class="popup-follow-button" type="button" data-follow-name="${escapeHTML(r.name)}">Follow Story</button>`
+    : "";
 
   return buildPopup(`
     ${imgHtml}
     <strong>${escapeHTML(getDisplayName(r, y))}</strong>
     ${titleText ? `<div class="entity-popup-title">${escapeHTML(titleText)}</div>` : ""}
     ${yearsStr}${ageText ? " — " + ageText : ""}<br>
+    ${followAction}
     ${r.bio || ""}
+    ${sourceHtml}
   `);
 }
 
@@ -1485,6 +1523,62 @@ function getFollowTravelScale(r) {
   );
 }
 
+async function loadDeferredContent() {
+  if (deferredContentLoadPromise) return deferredContentLoadPromise;
+
+  deferredContentLoadPromise = Promise.all([
+    loadJSON("data/cities.json"),
+    loadJSON("data/battles.json"),
+    loadJSON("data/temporary_regions.json"),
+    loadJSON("data/biblical_regions.json"),
+    loadAllEvents(),
+    loadJSON("data/music.json"),
+    loadJSON("data/bible_places.json")
+  ]).then(([
+    cities,
+    battles,
+    temporaryRegions,
+    biblicalRegions,
+    events,
+    music,
+    biblePlaces
+  ]) => {
+    CITIES = cities;
+    BATTLES = battles;
+    BIBLICAL_REGIONS = biblicalRegions;
+    EVENTS = events;
+    MUSIC = music;
+    BIBLE_PLACES = biblePlaces;
+
+    const biblicalReplacementNames = new Set(
+      BIBLICAL_REGIONS.map(region => region.replaces || region.name)
+    );
+    TEMPORARY_REGIONS = temporaryRegions
+      .filter(region => !biblicalReplacementNames.has(region.name))
+      .concat(BIBLICAL_REGIONS.filter(region => !region.remove));
+
+    buildCityIndex();
+    buildEventIndex();
+    deferredContentLoaded = true;
+    populateSeferSearch();
+
+    if (currentYear !== null) {
+      return show(currentYear, false, { nonBlockingBorder: true });
+    }
+    return true;
+  }).catch(error => {
+    deferredContentLoadPromise = null;
+    console.warn("Could not load secondary map data:", error);
+    return false;
+  });
+
+  return deferredContentLoadPromise;
+}
+
+function getFollowMarkerTransform(r) {
+  return `scale(${getFollowTravelScale(r)})`;
+}
+
 function buildSingleHTML(
   r,
   y
@@ -1512,9 +1606,6 @@ function buildSingleHTML(
   const followed =
     isFollowedRabbi(r);
 
-  const travelScale =
-    getFollowTravelScale(r);
-
   const imageSize =
     40 * RABBI_SCALE;
 
@@ -1530,7 +1621,7 @@ function buildSingleHTML(
     SHOW_RABBI_PICTURES && imgSrc
       ? `<img src="${imgSrc}" loading="lazy" decoding="async"
           class="rabbi-single-img"
-          style="pointer-events:auto;cursor:pointer;width:${imageSize}px;height:${imageSize}px;object-fit:cover;border-radius:50%;border:1px solid #333;box-shadow:${selectionShadow};">`
+          style="pointer-events:auto;cursor:pointer;width:${imageSize}px;height:${imageSize}px;object-fit:cover;object-position:${getPortraitPosition(r)};border-radius:50%;border:1px solid #333;box-shadow:${selectionShadow};">`
       : `<div
           class="rabbi-single-img"
           style="pointer-events:auto;cursor:pointer;width:${dotSize}px;height:${dotSize}px;border-radius:50%;background:${color};box-shadow:${selectionShadow};">
@@ -1555,6 +1646,7 @@ function buildSingleHTML(
             line-height:1.1;
             padding:${1.5 * RABBI_SCALE}px ${5 * RABBI_SCALE}px;
             box-shadow:${labelShadow};
+            transform:translateY(${Number(r._sharedFollowLabelOffsetY) || 0}px);
           ">
           ${getMapEntityLabel(r, y)}${ageLabel}
         </div>`
@@ -1568,7 +1660,7 @@ function buildSingleHTML(
         flex-direction:column-reverse;
         align-items:center;
         gap:${5 * RABBI_SCALE}px;
-        transform:scale(${travelScale});
+        transform:${getFollowMarkerTransform(r)};
         transform-origin:center bottom;
         transition:transform 0.25s ease;
       ">
@@ -1589,8 +1681,8 @@ function buildGroupHTML(
     `<div
       class="rabbi-group-img rabbi-count-cluster"
       role="button"
-      aria-label="Open ${rs.length} rabbis"
-      title="${rs.length} rabbis"
+      aria-label="Open ${rs.length} Rabbanim"
+      title="${rs.length} Rabbanim"
       style="
         pointer-events:auto;
         cursor:pointer;
@@ -2040,6 +2132,7 @@ function drawEvents(
   const visibleEvents = [];
   const eventsForYear = [
     ...(eventsByYear.get(Number(y)) || []),
+    ...(musicByYear.get(Number(y)) || []),
     ...(sefarimByYear.get(Number(y)) || [])
   ];
   const currentEventSet = new Set(eventsForYear);
@@ -2061,6 +2154,7 @@ function drawEvents(
   eventsForYear.forEach(
     ev => {
       const isSefarim = ev._isSefer;
+      const isMusic = ev._isMusic;
 
       const paneName =
         isSefarim
@@ -2125,8 +2219,8 @@ function drawEvents(
                   : 0,
 
               icon: L.divIcon({
-                className: "label-text event-label",
-                html: `<span class="event-label-drag-area" title="Drag to reposition this ${isSefarim ? "sefer" : "event"}"><span class="event-label-handle">●</span><span>${escapeHTML(cleanRecordName(ev.name))}</span></span>`,
+                className: `label-text event-label${isMusic ? " music-event-label" : ""}`,
+                html: `<span class="event-label-drag-area" title="Drag to reposition this ${isSefarim ? "sefer" : "event"}"><span class="event-label-handle">●</span><span>${isMusic ? "🎵 " : ""}${escapeHTML(cleanRecordName(ev.name))}</span></span>`,
                 iconSize: [160, 24],
                 iconAnchor: [0, 10]
               }),
@@ -2155,11 +2249,19 @@ function drawEvents(
           .addTo(map);
       }
 
-      const visible = isSefarim
+      const visible = isMusic
+        ? filters.music.checked
+        : isSefarim
         ? filters.sefarim.checked
         : filters.events.checked;
 
-      const popupHTML = isSefarim
+      const safeYouTubeURL = /^https:\/\/(?:www\.)?(?:youtube\.com\/watch\?|youtu\.be\/)/i.test(ev.youtube_url || "")
+        ? ev.youtube_url
+        : "";
+      const youtubeVideoId = safeYouTubeURL.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/)?.[1] || "";
+      const popupHTML = isMusic
+        ? `<div class="music-popup"><strong>🎵 ${escapeHTML(cleanRecordName(ev.name))}</strong>${ev.composer ? `<div class="music-popup-composer">${escapeHTML(ev.composer)}</div>` : ""}${ev.performance ? `<div class="music-popup-performance">Recording: ${escapeHTML(ev.performance)}</div>` : ""}<small>${ev.approximate ? "Approximately " : ""}${escapeHTML(ev.year ?? ev.start_year ?? "")}${ev.place ? ` · ${escapeHTML(ev.place)}` : ""}</small><div class="music-popup-description">${escapeHTML(ev.note || ev.event || "No further information is available for this piece yet.")}</div>${youtubeVideoId ? `<button class="music-play-button" type="button" data-youtube-id="${youtubeVideoId}">▶ Play here</button><div class="music-player" hidden></div><a class="music-youtube-fallback" href="${escapeHTML(safeYouTubeURL)}" target="_blank" rel="noopener noreferrer">Open on YouTube ↗</a>` : ""}${ev.source_url && /^https?:\/\//i.test(ev.source_url) ? `<a class="music-source-link" href="${escapeHTML(ev.source_url)}" target="_blank" rel="noopener noreferrer">Research notes ↗</a>` : ""}</div>`
+        : isSefarim
         ? `<div class="sefer-popup"><strong>📖 ${escapeHTML(cleanRecordName(ev.name))}</strong>${Number.isFinite(Number(ev.year ?? ev.start_year)) ? `<br><small>${escapeHTML(ev.year ?? ev.start_year)}</small>` : ""}<div class="sefer-popup-description">${ev.note || ev.event || "No further information is available for this book yet."}</div>${ev.source ? `<small>Source: ${escapeHTML(ev.source)}</small>` : ""}<button class="sefer-sections-button" data-sefer-id="${escapeHTML(ev.id || "")}">Open book sections</button></div>`
         : `<strong>${ev.name}</strong><br>${ev.note || ev.event || ""}${ev.source ? `<br><small>Source: ${ev.source}</small>` : ""}`;
 
@@ -2241,20 +2343,13 @@ function drawShuls(
   SHULS.forEach(
     s => {
       if (!s._marker) {
-        const color =
-          getEntityColor(
-            s.name
-          );
-
         const SHUL_IMG_SIZE =
-          60;
+          64;
 
         const iconHTML =
           s.img
-            ? `<img src="${s.img}" style="width:${SHUL_IMG_SIZE}px;height:${SHUL_IMG_SIZE}px;border-radius:6px;border:1px solid #333;">`
-            : s.emoji
-              ? `<div style="font-size:${SHUL_IMG_SIZE * 0.6}px;line-height:1;">${s.emoji}</div>`
-              : `<div style="width:${SHUL_IMG_SIZE}px;height:${SHUL_IMG_SIZE}px;background:${color};border-radius:6px;border:1px solid #333;"></div>`;
+            ? `<img class="shul-marker-image" src="${escapeHTML(s.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
+            : "";
 
         s._marker =
           L.marker(
@@ -2265,43 +2360,26 @@ function drawShuls(
 
               icon: L.divIcon({
                 html: `
-                  <div
-                    style="
-                      pointer-events:none;
-                      display:flex;
-                      flex-direction:column;
-                      align-items:center;
-                    ">
-                    <div
-                      class="rabbi-label"
-                      style="
-                        pointer-events:auto;
-                        cursor:pointer;
-                        position:absolute;
-                        top:-22px;
-                        background:#ddd;
-                        color:#000;
-                        white-space:nowrap;
-                      ">
-                      ${s.name}
-                    </div>
-
-                    <div style="pointer-events:none;">
+                  <div class="shul-marker-shell">
+                    <div class="shul-map-label">${escapeHTML(s.name)}</div>
+                    <div class="shul-marker-card">
+                      <div class="shul-marker-fallback" aria-hidden="true">🕍</div>
                       ${iconHTML}
                     </div>
+                    <div class="shul-marker-base" aria-hidden="true"></div>
                   </div>
                 `,
 
-                className: "",
+                className: "shul-div-icon",
 
                 iconSize: [
                   SHUL_IMG_SIZE,
-                  SHUL_IMG_SIZE
+                  SHUL_IMG_SIZE + 14
                 ],
 
                 iconAnchor: [
                   SHUL_IMG_SIZE / 2,
-                  SHUL_IMG_SIZE / 2
+                  SHUL_IMG_SIZE / 2 + 6
                 ]
               })
             }
@@ -2316,11 +2394,12 @@ function drawShuls(
           .addTo(map);
       }
 
-      const alive =
-        Number(y) >=
-          Number(s.birth_year) &&
-        Number(y) <=
-          Number(s.death_year);
+      const startYear = Number(s.birth_year);
+      const rawEndYear = s.death_year ?? s.map_end_year;
+      const endYear = rawEndYear === null || rawEndYear === undefined || rawEndYear === ""
+        ? Infinity
+        : Number(rawEndYear);
+      const alive = Number(y) >= startYear && Number(y) <= endYear;
 
       const moves =
         SHULS_MOV[s.name] ||
@@ -2383,7 +2462,7 @@ function drawShuls(
 
         if (moveEvent) {
           eventsList.push(
-            `⛪ ${s.name} — ${moveEvent.event}`
+            `🕍 ${s.name} — ${moveEvent.event}`
           );
         }
 
@@ -2487,9 +2566,10 @@ function renderRabbis(
                     r._marker?._displayYear ||
                     currentYear
                   )
-              )
-              .addTo(map);
+              );
           }
+
+          if (!map.hasLayer(r._marker)) r._marker.addTo(map);
 
           r._marker.setZIndexOffset(
             followed
@@ -2541,15 +2621,6 @@ function renderRabbis(
             true
           );
 
-          r._marker.bindPopup(
-            () =>
-              buildEntityPopup(
-                [r],
-                r._marker?._displayYear ||
-                currentYear
-              )
-          );
-
           const moveEvent = r._movementEventsByYear?.get(Number(y));
 
           const shouldShowMoveEvent =
@@ -2587,6 +2658,7 @@ function renderRabbis(
                 `<div class="auto-event-content">
                   <strong>${getDisplayName(r, y)}</strong><br>
                   ${moveEvent.event}
+                  ${followActive ? "" : '<button class="popup-follow-button" type="button" data-follow-name="' + escapeHTML(r.name) + '">Follow Story</button>'}
                 </div>`
               );
 
@@ -2625,11 +2697,9 @@ function renderRabbis(
         } else if (
           r._marker
         ) {
-          r._marker.setOpacity(0);
-
           r._marker.closePopup?.();
 
-          r._marker.unbindPopup();
+          if (map.hasLayer(r._marker)) map.removeLayer(r._marker);
 
           r._marker.setZIndexOffset(
             0
@@ -2655,6 +2725,21 @@ function renderRabbis(
     );
 
   if (!followOnly) {
+    arrivals.forEach(({ r }) => {
+      r._sharedFollowLabelOffsetY = 0;
+    });
+
+    const followedArrival = arrivals.find(({ r }) => isFollowedRabbi(r));
+    if (followedArrival) {
+      const followedPoint = map.latLngToLayerPoint(followedArrival.pos);
+      arrivals.forEach(({ r, pos }) => {
+        if (r === followedArrival.r) return;
+        if (followedPoint.distanceTo(map.latLngToLayerPoint(pos)) <= 3) {
+          r._sharedFollowLabelOffsetY = 28 * RABBI_SCALE;
+        }
+      });
+    }
+
     groupVisibleRabbis(
       arrivals,
       y
@@ -2776,13 +2861,11 @@ function groupVisibleRabbis(
           rs.forEach(
             r => {
               if (r._marker) {
-                r._marker.setOpacity(
-                  0
-                );
-
                 r._marker.closePopup?.();
 
                 r._marker.unbindPopup();
+
+                if (map.hasLayer(r._marker)) map.removeLayer(r._marker);
 
                 setLayerClickable(
                   r._marker,
@@ -2939,6 +3022,8 @@ function groupVisibleRabbis(
           if (
             r._marker
           ) {
+            if (!map.hasLayer(r._marker)) r._marker.addTo(map);
+
             r._marker.setOpacity(
               1
             );
@@ -3085,7 +3170,10 @@ async function show(
   const travelOnly =
     options.travelOnly === true;
 
-  if (!travelOnly) {
+  const rapidTimeline =
+    options.rapidTimeline === true;
+
+  if (!travelOnly && !rapidTimeline) {
     drawCities(year);
 
     drawBattles(
@@ -3112,7 +3200,7 @@ async function show(
   if (
     shouldDrawPeople
   ) {
-    if (!travelOnly) {
+    if (!travelOnly && !rapidTimeline) {
       drawShuls(
         year,
         animate,
@@ -3128,7 +3216,7 @@ async function show(
     );
   }
 
-  if (!travelOnly) {
+  if (!travelOnly && !rapidTimeline) {
     updateEventBox(
       eventsList
     );
@@ -3231,7 +3319,7 @@ function updateFollowedRabbiTravelScale() {
 
   if (root) {
     root.style.transform =
-      `scale(${getFollowTravelScale(followedRabbi)})`;
+      getFollowMarkerTransform(followedRabbi);
   }
 }
 
@@ -3244,14 +3332,14 @@ async function setupControlsAndDraw() {
           a - b
       );
 
-  ACTIVE_YEARS =
-    [...YEARS];
+  const initialFrom = Math.max(Math.min(...YEARS), DEFAULT_RANGE_FROM);
+  const initialTo = Math.min(Math.max(...YEARS), DEFAULT_RANGE_TO);
 
-  fromInput.value =
-    Math.min(...YEARS);
+  ACTIVE_YEARS = YEARS.filter(year => year >= initialFrom && year <= initialTo);
 
-  toInput.value =
-    Math.max(...YEARS);
+  fromInput.value = initialFrom;
+
+  toInput.value = initialTo;
 
   slider.max =
     ACTIVE_YEARS.length - 1;
@@ -3317,7 +3405,9 @@ async function setupControlsAndDraw() {
   populateSeferSearch();
   populateFollowDropdown();
   setupFollowControls();
+  setupPopupFollowActions();
   setupSeferDetails();
+  setupMusicPlayback();
   setupMobileControls();
 
   if (
@@ -3461,29 +3551,62 @@ async function setupControlsAndDraw() {
       );
     };
 
-  const stepTimeline = direction => {
+  const stepTimeline = (direction, holding = false) => {
     pauseFollowPlayback("Paused after manual year change");
     const nextIndex = Math.max(0, Math.min(ACTIVE_YEARS.length - 1, currentIndex + direction));
     if (nextIndex === currentIndex) return;
     currentIndex = nextIndex;
     slider.value = currentIndex;
-    show(ACTIVE_YEARS[currentIndex], true, { nonBlockingBorder: true });
+    show(ACTIVE_YEARS[currentIndex], true, {
+      nonBlockingBorder: true,
+      rapidTimeline: holding
+    });
     keepFollowedRabbiCentred(false);
   };
 
   const installHoldStepper = (button, direction) => {
     let repeatTimer = null;
     let ignoreClick = false;
+    let nextStepAt = 0;
+
+    const scheduleNextStep = () => {
+      if (repeatTimer === null) return;
+
+      const now = performance.now();
+      if (now >= nextStepAt) {
+        stepTimeline(direction, true);
+        nextStepAt += HOLD_STEP_INTERVAL;
+
+        // Avoid a burst of catch-up years after an unusually busy frame.
+        if (nextStepAt < performance.now()) {
+          nextStepAt = performance.now() + HOLD_STEP_INTERVAL;
+        }
+      }
+
+      repeatTimer = setTimeout(
+        scheduleNextStep,
+        Math.max(0, nextStepAt - performance.now())
+      );
+    };
+
     const stop = () => {
-      if (repeatTimer) clearInterval(repeatTimer);
+      const wasHolding = repeatTimer !== null;
+      if (repeatTimer !== null) clearTimeout(repeatTimer);
       repeatTimer = null;
+
+      // Refresh heavier layers once on release so year-hold pacing does not
+      // vary with the number of events, books, cities or institutions.
+      if (wasHolding && currentYear !== null) {
+        show(currentYear, false, { nonBlockingBorder: true });
+      }
     };
     button.addEventListener("pointerdown", event => {
       if (event.button !== 0) return;
       event.preventDefault();
       ignoreClick = true;
-      stepTimeline(direction);
-      repeatTimer = setInterval(() => stepTimeline(direction), 200);
+      stepTimeline(direction, true);
+      nextStepAt = performance.now() + HOLD_STEP_INTERVAL;
+      repeatTimer = setTimeout(scheduleNextStep, HOLD_STEP_INTERVAL);
       button.setPointerCapture?.(event.pointerId);
     });
     ["pointerup", "pointercancel", "lostpointercapture", "pointerleave"].forEach(type =>
@@ -3581,6 +3704,13 @@ async function setupControlsAndDraw() {
           if (cb === filters.shuls && cb.checked) await loadDeferredShuls();
           if (cb === filters.demographics && cb.checked) await loadDeferredDemographics();
           if (
+            cb.checked &&
+            !deferredContentLoaded &&
+            [filters.battles, filters.temporaryRegions, filters.events, filters.music, filters.sefarim].includes(cb)
+          ) {
+            await loadDeferredContent();
+          }
+          if (
             currentYear !== null
           ) {
             await show(
@@ -3601,6 +3731,18 @@ async function setupControlsAndDraw() {
 
   // Begin the default visible layer immediately after the first usable frame.
   if (filters.shuls.checked) loadDeferredShuls();
+
+  // Stream secondary layers after the first usable frame instead of blocking
+  // startup on several megabytes of events, books, music and city data.
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(() => {
+      loadDeferredContent();
+    }, { timeout: 1500 });
+  } else {
+    setTimeout(() => {
+      loadDeferredContent();
+    }, 450);
+  }
 
   if ("requestIdleCallback" in window) {
     requestIdleCallback(() => {
@@ -3645,7 +3787,7 @@ function refreshRabbiEventPopupsForZoom() {
 
     marker._eventPopup
       .setLatLng(marker.getLatLng())
-      .setContent(`<div class="auto-event-content"><strong>${getDisplayName(r, currentYear)}</strong><br>${moveEvent.event}</div>`);
+      .setContent(`<div class="auto-event-content"><strong>${getDisplayName(r, currentYear)}</strong><br>${moveEvent.event}${followActive ? "" : '<button class="popup-follow-button" type="button" data-follow-name="' + escapeHTML(r.name) + '">Follow Story</button>'}</div>`);
     if (!map.hasLayer(marker._eventPopup)) marker._eventPopup.addTo(map);
   });
 }
@@ -3793,7 +3935,7 @@ async function jumpToRabbi() {
 
   if (!r) {
     alert(
-      "Rabbi not found"
+      "Rabbinic figure not found"
     );
 
     return;
@@ -4085,7 +4227,7 @@ function ensureFollowStatusElement() {
     ].join(";");
 
   status.textContent =
-    "Choose a rabbi and press Follow.";
+    "Choose from the Rabbanim and press Follow.";
 
   body.appendChild(
     status
@@ -4366,6 +4508,49 @@ function findFollowStartIndex(entity) {
   const candidateYear = Number(ACTIVE_YEARS[low]);
   if (candidateYear > getEntityMapEndYear(entity)) return -1;
   return getFollowPosition(entity, candidateYear) ? low : -1;
+}
+
+function setupPopupFollowActions() {
+  document.addEventListener("click", async event => {
+    const button = event.target.closest?.(".popup-follow-button");
+    if (!button) return;
+
+    const entityName = String(button.dataset.followName || "").trim();
+    const entity = getFollowEntity(entityName);
+    const select = document.getElementById("storyRabbiSelect");
+    const control = document.getElementById("storyControl");
+    const arrow = document.getElementById("storyDropdownArrow");
+    if (!entity || !select) {
+      updateFollowStatus("This story could not be found.");
+      return;
+    }
+
+    // A popup action means “tell this person's story”, so use the full
+    // mapped lifespan rather than failing because of a narrower year filter.
+    const firstYear = Number(entity.birth_year);
+    const finiteDeath = Number(entity.death_year);
+    const lastYear = entity.death_year !== null && entity.death_year !== undefined && Number.isFinite(finiteDeath)
+      ? finiteDeath
+      : Math.max(...YEARS);
+    const storyYears = YEARS.filter(year => year >= firstYear && year <= lastYear);
+    if (storyYears.length) {
+      ACTIVE_YEARS = storyYears;
+      fromInput.value = storyYears[0];
+      toInput.value = storyYears[storyYears.length - 1];
+      slider.max = storyYears.length - 1;
+      currentIndex = 0;
+      slider.value = 0;
+      populateRabbiSearch();
+      populateSeferSearch();
+      populateFollowDropdown();
+    }
+
+    select.value = entity.name;
+    control?.classList.add("open");
+    if (arrow) arrow.textContent = "▴";
+    map.closePopup();
+    await startOrResumeFollow();
+  });
 }
 
 function setupMobileControls() {
@@ -4850,7 +5035,7 @@ async function startOrResumeFollow() {
 
   if (!selectedName) {
     updateFollowStatus(
-      "Select a rabbi first."
+      "Select a person first."
     );
 
     return;
@@ -4889,7 +5074,7 @@ async function startOrResumeFollow() {
 
   if (!entity) {
     updateFollowStatus(
-      "Rabbi not found."
+      "Rabbinic figure not found."
     );
 
     return;
@@ -4904,7 +5089,7 @@ async function startOrResumeFollow() {
     startIndex < 0
   ) {
     updateFollowStatus(
-      "This rabbi does not appear within the selected year range."
+      "This person does not appear within the selected year range."
     );
 
     return;
