@@ -5,6 +5,51 @@ body,
   margin: 0;
 }
 
+#siteIntroduction {
+  position: absolute;
+  left: 10px;
+  bottom: 105px;
+  z-index: 1005;
+  width: min(330px, calc(100vw - 20px));
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border: 1px solid rgba(68, 68, 68, 0.42);
+  border-radius: 8px;
+  background: rgba(247, 245, 238, 0.97);
+  color: #292929;
+  box-shadow: 0 2px 9px rgba(0, 0, 0, 0.2);
+  font: 12px/1.4 "Segoe UI", sans-serif;
+}
+
+#siteIntroduction summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+}
+
+#siteIntroduction h1 {
+  display: inline;
+  margin: 0;
+  font: 750 15px/1.25 "Segoe UI", sans-serif;
+}
+
+#siteIntroduction p {
+  margin: 7px 0;
+}
+
+#siteIntroduction a {
+  color: #245b50;
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  #siteIntroduction {
+    display: none;
+  }
+}
+
 #year {
   position: absolute;
   top: 12px;

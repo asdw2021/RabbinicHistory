@@ -3729,6 +3729,11 @@ async function setupControlsAndDraw() {
     ]
   );
 
+  const requestedRabbi = new URLSearchParams(window.location.search).get("rabbi");
+  if (requestedRabbi) {
+    await followEntityStory(requestedRabbi);
+  }
+
   // Begin the default visible layer immediately after the first usable frame.
   if (filters.shuls.checked) loadDeferredShuls();
 
@@ -4516,13 +4521,18 @@ function setupPopupFollowActions() {
     if (!button) return;
 
     const entityName = String(button.dataset.followName || "").trim();
+    await followEntityStory(entityName);
+  });
+}
+
+async function followEntityStory(entityName) {
     const entity = getFollowEntity(entityName);
     const select = document.getElementById("storyRabbiSelect");
     const control = document.getElementById("storyControl");
     const arrow = document.getElementById("storyDropdownArrow");
     if (!entity || !select) {
       updateFollowStatus("This story could not be found.");
-      return;
+      return false;
     }
 
     // A popup action means “tell this person's story”, so use the full
@@ -4550,7 +4560,7 @@ function setupPopupFollowActions() {
     if (arrow) arrow.textContent = "▴";
     map.closePopup();
     await startOrResumeFollow();
-  });
+    return true;
 }
 
 function setupMobileControls() {
